@@ -322,7 +322,7 @@ export default function UsersPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        {user.department || user.courseId || "-"}
+                        {user.department || user.program || user.courseId || "-"}
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={getStatusBadgeVariant(user.status)} className="text-xs">

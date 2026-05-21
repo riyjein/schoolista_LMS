@@ -22,6 +22,7 @@ export interface User {
   employeeId?: string;
   // Additional info
   department?: string;
+  program?: string;
   courseId?: string;
   yearLevel?: number;
 }
@@ -61,6 +62,7 @@ function generateUsers(): User[] {
       lastLogin: lastEnrollment ? lastEnrollment.enrollmentDate : '2024-08-20',
       studentNumber: student.studentNumber,
       department: undefined,
+      program: student.courseId,
       courseId: student.courseId,
       yearLevel: student.yearLevel,
     });
@@ -80,6 +82,7 @@ function generateUsers(): User[] {
       lastLogin: loads.length > 0 ? '2024-11-18' : '2024-10-15',
       employeeId: instructor.employeeId,
       department: instructor.department,
+      program: undefined,
     });
   });
 
@@ -94,6 +97,7 @@ function generateUsers(): User[] {
     lastLogin: '2024-11-19',
     employeeId: 'EMP-004',
     department: 'College of Computer Studies',
+    program: undefined,
   });
 
   users.push({
@@ -106,6 +110,7 @@ function generateUsers(): User[] {
     lastLogin: '2024-11-19',
     employeeId: 'EMP-005',
     department: 'Office of the President',
+    program: undefined,
   });
 
   users.push({
@@ -118,6 +123,7 @@ function generateUsers(): User[] {
     lastLogin: '2024-11-19',
     employeeId: 'ADMIN-001',
     department: 'IT Services',
+    program: undefined,
   });
 
   return users;

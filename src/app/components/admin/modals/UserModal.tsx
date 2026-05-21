@@ -36,7 +36,7 @@ interface UserFormState {
   department: string;
   studentNumber: string;
   employeeId: string;
-  courseId: string;
+  program: string;
   yearLevel: string;
 }
 
@@ -48,7 +48,7 @@ const emptyState: UserFormState = {
   department: "",
   studentNumber: "",
   employeeId: "",
-  courseId: "",
+  program: "",
   yearLevel: "",
 };
 
@@ -70,7 +70,7 @@ function toFormState(user?: User | null): UserFormState {
     department: user.department ?? "",
     studentNumber: user.studentNumber ?? "",
     employeeId: user.employeeId ?? "",
-    courseId: user.courseId ?? "",
+    program: user.program ?? user.courseId ?? "",
     yearLevel: user.yearLevel ? String(user.yearLevel) : "",
   };
 }
@@ -103,11 +103,11 @@ export default function UserModal({
         email: form.email.trim(),
         role: form.role,
         status: form.status,
-        avatar_initials: getInitials(form.name),
+        avatarInitials: getInitials(form.name),
         department: form.department.trim() || undefined,
         studentNumber: form.studentNumber.trim() || undefined,
         employeeId: form.employeeId.trim() || undefined,
-        courseId: form.courseId.trim() || undefined,
+        program: form.program.trim() || undefined,
         yearLevel: form.yearLevel ? Number(form.yearLevel) : undefined,
         createdAt:
           initialUser?.createdAt ?? new Date().toISOString().slice(0, 10),
@@ -216,11 +216,11 @@ export default function UserModal({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="user-course">Program / Course</Label>
+              <Label htmlFor="user-program">Program</Label>
               <Input
-                id="user-course"
-                value={form.courseId}
-                onChange={handleChange("courseId")}
+                id="user-program"
+                value={form.program}
+                onChange={handleChange("program")}
                 placeholder="Program identifier"
               />
             </div>

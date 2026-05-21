@@ -45,7 +45,10 @@ function camelizeValue(value: unknown): unknown {
 }
 
 function createLocalId(prefix: string): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return `${prefix}-${crypto.randomUUID()}`;
   }
 
@@ -100,8 +103,14 @@ export function useSupabaseCrudTable<T extends { id: string }>(
       setError(fetchError.message);
       setData(fallback);
     } else {
-      const normalizedRows = (rows ?? []).map((row) => camelizeValue(row)) as T[];
-      if (useFallbackWhenEmpty && normalizedRows.length === 0 && fallback.length > 0) {
+      const normalizedRows = (rows ?? []).map((row) =>
+        camelizeValue(row),
+      ) as T[];
+      if (
+        useFallbackWhenEmpty &&
+        normalizedRows.length === 0 &&
+        fallback.length > 0
+      ) {
         setData(fallback);
       } else {
         setData(normalizedRows);
@@ -109,7 +118,7 @@ export function useSupabaseCrudTable<T extends { id: string }>(
     }
 
     setLoading(false);
-  }, [ascending, fallback, idColumn, orderBy, select, table, useFallbackWhenEmpty]);
+  }, [ascending, orderBy, select, table, useFallbackWhenEmpty]);
 
   const createRow = useCallback(
     async (payload: Partial<T>): Promise<T | null> => {
@@ -172,5 +181,13 @@ export function useSupabaseCrudTable<T extends { id: string }>(
     void refresh();
   }, [refresh]);
 
-  return { data, loading, error, refresh, createRow, updateRowById, deleteRowById };
+  return {
+    data,
+    loading,
+    error,
+    refresh,
+    createRow,
+    updateRowById,
+    deleteRowById,
+  };
 }

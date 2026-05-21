@@ -1,22 +1,46 @@
-import { useState, useMemo } from 'react';
-import { sections } from '@/lib/data/schedule/sections';
-import { courses } from '@/lib/data/enrollment/courses';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
+import { useState, useMemo } from "react";
+import { courses } from "@/lib/data/enrollment/courses";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Input } from "../ui/input";
+import { Button } from "../ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
-import { Search, Grid3x3, Plus } from 'lucide-react';
+} from "../ui/select";
+import { Search, Grid3x3, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import SectionModal from "./modals/SectionModal";
+import { useAdminSections, Section } from "@/lib/hooks/admin/useAdminSections";
 
 export default function SectionsPage() {
-  const [search, setSearch] = useState('');
-  const [courseFilter, setCourseFilter] = useState<string>('all');
+  const {
+    sections,
+    loading,
+    error,
+    createSection,
+    updateSection,
+    deleteSection,
+  } = useAdminSections();
+  const [search, setSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState<string>("all");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+  const [activeSection, setActiveSection] = useState<Section | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Section | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const filteredSections = useMemo(() => {
     let result = [...sections];
@@ -26,17 +50,54 @@ export default function SectionsPage() {
       result = result.filter((s) => s.code.toLowerCase().includes(query));
     }
 
-    if (courseFilter !== 'all') {
-      result = result.filter((s) => s.courseId === courseFilter || s.courseId === 'all');
+    if (courseFilter !== "all") {
+      result = result.filter(
+        (s) => s.courseId === courseFilter || s.courseId === "all",
+      );
     }
 
     return result;
-  }, [search, courseFilter]);
+  }, [search, courseFilter, sections]);
 
   const getCourseNameById = (courseId: string) => {
-    if (courseId === 'all') return 'All Programs';
+    if (courseId === "all") return "All Programs";
     const course = courses.find((c) => c.id === courseId);
     return course ? course.name : courseId;
+  };
+
+  const openCreateModal = () => {
+    setActiveSection(null);
+    setModalMode("create");
+    setModalOpen(true);
+  };
+
+  const openEditModal = (section: Section) => {
+    setActiveSection(section);
+    setModalMode("edit");
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (payload: Partial<Section>) => {
+    if (modalMode === "create") {
+      await createSection(payload);
+      return;
+    }
+
+    if (activeSection?.id) {
+      await updateSection(activeSection.id, payload);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.id) return;
+
+    setProcessingId(deleteTarget.id);
+    try {
+      await deleteSection(deleteTarget.id);
+    } finally {
+      setProcessingId(null);
+      setDeleteTarget(null);
+    }
   };
 
   return (
@@ -49,7 +110,7 @@ export default function SectionsPage() {
             Manage class sections and assignments
           </p>
         </div>
-        <Button>
+        <Button onClick={openCreateModal}>
           <Plus className="mr-2 h-4 w-4" />
           Add Section
         </Button>
@@ -61,7 +122,9 @@ export default function SectionsPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Sections</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Sections
+                </p>
                 <p className="mt-1 text-2xl font-bold">{sections.length}</p>
               </div>
               <div className="rounded-full bg-blue-100 p-3">
@@ -74,7 +137,9 @@ export default function SectionsPage() {
         <Card className="shadow-sm">
           <CardContent className="p-6">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Total Capacity</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Total Capacity
+              </p>
               <p className="mt-1 text-2xl font-bold">
                 {sections.reduce((sum, s) => sum + s.maxStudents, 0)}
               </p>
@@ -85,9 +150,16 @@ export default function SectionsPage() {
         <Card className="shadow-sm">
           <CardContent className="p-6">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Avg. Section Size</p>
+              <p className="text-sm font-medium text-muted-foreground">
+                Avg. Section Size
+              </p>
               <p className="mt-1 text-2xl font-bold">
-                {Math.round(sections.reduce((sum, s) => sum + s.maxStudents, 0) / sections.length)}
+                {sections.length > 0
+                  ? Math.round(
+                      sections.reduce((sum, s) => sum + s.maxStudents, 0) /
+                        sections.length,
+                    )
+                  : 0}
               </p>
             </div>
           </CardContent>
@@ -157,14 +229,21 @@ export default function SectionsPage() {
               </thead>
               <tbody className="divide-y">
                 {filteredSections.map((section) => (
-                  <tr key={section.id} className="hover:bg-muted/30 transition-colors">
+                  <tr
+                    key={section.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
                     <td className="px-4 py-3">
                       <Badge variant="outline" className="text-xs font-mono">
                         {section.code}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm">{getCourseNameById(section.courseId)}</td>
-                    <td className="px-4 py-3 text-sm">Year {section.yearLevel}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {getCourseNameById(section.courseId)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      Year {section.yearLevel}
+                    </td>
                     <td className="px-4 py-3 text-sm">{section.schoolYear}</td>
                     <td className="px-4 py-3 text-sm">{section.semester}</td>
                     <td className="px-4 py-3">
@@ -174,11 +253,23 @@ export default function SectionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={processingId === section.id}
+                          onClick={() => openEditModal(section)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
                           Edit
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          View
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={processingId === section.id}
+                          onClick={() => setDeleteTarget(section)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
                         </Button>
                       </div>
                     </td>
@@ -193,6 +284,45 @@ export default function SectionsPage() {
           </p>
         </CardContent>
       </Card>
+
+      <SectionModal
+        open={modalOpen}
+        mode={modalMode}
+        initialSection={activeSection}
+        courseOptions={courses}
+        onOpenChange={setModalOpen}
+        onSubmit={handleSubmit}
+      />
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Section</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete section "{deleteTarget?.code}"?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processingId === deleteTarget?.id}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={processingId === deleteTarget?.id}
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {processingId === deleteTarget?.id && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
