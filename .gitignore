@@ -1,28 +1,73 @@
-# dependencies
+# ─── Dependencies ─────────────────────────────────────────
 node_modules/
+pnpm-lock.yaml
+npm-lock.json
+yarn.lock
 
-# nextjs
+# ─── Build & Output ───────────────────────────────────────
+dist/
+build/
 .next/
 out/
 
-# build
-dist/
-build/
-
-# env
+# ─── Environment & Secrets ────────────────────────────────
 .env
 .env.local
+.env.*.local
+.env.production.local
+.env.test.local
+.env.development.local
 
-# logs
+# ─── Logs ─────────────────────────────────────────────────
 *.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# cache
+# ─── Cache & Temp ─────────────────────────────────────────
 .cache/
 .turbo/
+.eslintcache
+.stylelintcache
+.next/cache/
 
-# OS
+# ─── IDE & Editor ─────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+*.sublime-project
+*.sublime-workspace
 
-# vscode
-.vscode/
+# ─── OS Files ─────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.pdb
+
+# ─── Testing ──────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+
+# ─── Runtime ──────────────────────────────────────────────
+.env.*.swp
+*.pid
+*.pid.lock
+
+# ─── Local Development ────────────────────────────────────
+.vite/
+.parcel-cache
+.turbo
+dist-ssr/
