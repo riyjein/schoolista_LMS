@@ -78,6 +78,8 @@ export function useAttendanceValidation() {
     }
 
     // 5. Duplicate check
+    // When this moves fully to Supabase, prefer a direct query against the
+    // attendance_records unique key instead of the local in-memory lookup.
     const existing = getRecordForStudentSession(studentId, session.id);
     if (existing) {
       return {

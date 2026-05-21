@@ -1,7 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import type { EvalStatus } from '../../types/evaluation';
-import { evalRecords, getEvalRecord } from '../../data/evaluation/eval-records';
-import { classOfferings } from '../../data/attendance/class-offerings';
+import { evalRecords as fallbackEvalRecords, getEvalRecord } from '../../data/evaluation/eval-records';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface ClassEvalStatus {
   classId: string;
@@ -10,18 +11,29 @@ export interface ClassEvalStatus {
 }
 
 export function useEvaluationValidation(studentId: string) {
+  const { data: evalRecords } = useSupabaseTable({
+    table: 'evaluation_records_view',
+    fallback: fallbackEvalRecords,
+    orderBy: 'submitted_at',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+
   const enrolledClasses = useMemo(
     () => classOfferings.filter((o) => o.enrolledStudentIds.includes(studentId)),
-    [studentId],
+    [studentId, classOfferings],
   );
 
   const getClassStatus = useCallback(
     (classId: string): ClassEvalStatus['status'] => {
-      const record = getEvalRecord(studentId, classId);
+      const record = evalRecords.find((r) => r.studentId === studentId && r.classId === classId);
       if (!record) return 'not-started';
       return record.status === 'submitted' ? 'submitted' : 'draft';
     },
-    [studentId],
+    [studentId, evalRecords],
   );
 
   const canEvaluate = useCallback(
@@ -29,22 +41,22 @@ export function useEvaluationValidation(studentId: string) {
       const isEnrolled = enrolledClasses.some((o) => o.id === classId);
       if (!isEnrolled) return { can: false, reason: 'Not enrolled in this class.' };
 
-      const record = getEvalRecord(studentId, classId);
+      const record = evalRecords.find((r) => r.studentId === studentId && r.classId === classId);
       if (record?.status === 'submitted') {
         return { can: false, reason: 'Evaluation already submitted and cannot be changed.' };
       }
       return { can: true };
     },
-    [studentId, enrolledClasses],
+    [studentId, enrolledClasses, evalRecords],
   );
 
   const classStatuses = useMemo((): ClassEvalStatus[] =>
     enrolledClasses.map((cls) => ({
       classId: cls.id,
       status: getClassStatus(cls.id),
-      record: getEvalRecord(studentId, cls.id),
+      record: evalRecords.find((r) => r.studentId === studentId && r.classId === cls.id),
     })),
-    [enrolledClasses, getClassStatus, studentId],
+    [enrolledClasses, getClassStatus, studentId, evalRecords],
   );
 
   const submittedCount = useMemo(

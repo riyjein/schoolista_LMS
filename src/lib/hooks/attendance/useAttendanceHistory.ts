@@ -1,12 +1,19 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { EnrichedAttendanceRecord, AttendanceSummary, AttendanceStatus } from '../../types/attendance';
-import { getRecordsForStudent } from '../../data/attendance/attendance-records';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules } from '../../data/attendance/schedules';
-import { instructors } from '../../data/attendance/instructors';
-import { subjects } from '../../data/enrollment/subjects';
+import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
-function enrichRecord(r: ReturnType<typeof getRecordsForStudent>[0]): EnrichedAttendanceRecord {
+function enrichRecord(
+  r: (typeof fallbackAttendanceRecords)[number],
+  classOfferings: typeof fallbackClassOfferings,
+  classSchedules: typeof fallbackClassSchedules,
+  instructors: typeof fallbackInstructors,
+  subjects: typeof fallbackSubjects,
+): EnrichedAttendanceRecord {
   const offering = classOfferings.find((o) => o.id === r.classId);
   const subject = subjects.find((s) => s.id === r.subjectId);
   const instructor = instructors.find((i) => i.id === r.instructorId);
@@ -60,6 +67,32 @@ const DEFAULT_FILTERS: AttendanceFilters = {
 const PAGE_SIZE = 15;
 
 export function useAttendanceHistory(studentId: string): UseAttendanceHistoryReturn {
+  const { data: attendanceRecords, loading: attendanceRecordsLoading } = useSupabaseTable({
+    table: 'attendance_records_view',
+    fallback: fallbackAttendanceRecords,
+    orderBy: 'date',
+  });
+  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
+    table: 'class_schedules_view',
+    fallback: fallbackClassSchedules,
+    orderBy: 'id',
+  });
+  const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+  const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+
   const [filters, setFilters] = useState<AttendanceFilters>(DEFAULT_FILTERS);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -88,8 +121,9 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
   }, []);
 
   const enrichedRecords = useMemo(
-    () => getRecordsForStudent(studentId).map(enrichRecord),
-    [studentId],
+    () => attendanceRecords.filter((r) => r.studentId === studentId)
+      .map((r) => enrichRecord(r, classOfferings, classSchedules, instructors, subjects)),
+    [studentId, attendanceRecords, classOfferings, classSchedules, instructors, subjects],
   );
 
   const availableClasses = useMemo(() => {
@@ -166,5 +200,11 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
     paginated,
     summary,
     availableClasses,
+    isLoading:
+      attendanceRecordsLoading ||
+      classOfferingsLoading ||
+      classSchedulesLoading ||
+      instructorsLoading ||
+      subjectsLoading,
   };
 }

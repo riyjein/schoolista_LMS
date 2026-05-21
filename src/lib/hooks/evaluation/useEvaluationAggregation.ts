@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import type { InstructorSummary } from '../../types/evaluation';
-import { evalRecords } from '../../data/evaluation/eval-records';
-import { evalCategories } from '../../data/evaluation/eval-settings';
-import { evalQuestions } from '../../data/evaluation/eval-questions';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { subjects } from '../../data/enrollment/subjects';
-import { instructors } from '../../data/attendance/instructors';
+import { evalRecords as fallbackEvalRecords } from '../../data/evaluation/eval-records';
+import { evalCategories as fallbackEvalCategories } from '../../data/evaluation/eval-settings';
+import { evalQuestions as fallbackEvalQuestions } from '../../data/evaluation/eval-questions';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 function avg(nums: number[]): number | null {
   if (nums.length === 0) return null;
@@ -13,6 +14,37 @@ function avg(nums: number[]): number | null {
 }
 
 export function useEvaluationAggregation(): InstructorSummary[] {
+  const { data: evalRecords } = useSupabaseTable({
+    table: 'evaluation_records_view',
+    fallback: fallbackEvalRecords,
+    orderBy: 'submitted_at',
+  });
+  const { data: evalCategories } = useSupabaseTable({
+    table: 'evaluation_categories',
+    fallback: fallbackEvalCategories,
+    orderBy: 'id',
+  });
+  const { data: evalQuestions } = useSupabaseTable({
+    table: 'evaluation_questions',
+    fallback: fallbackEvalQuestions,
+    orderBy: 'sort_order',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: instructors } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+
   return useMemo(() => {
     const submittedEvals = evalRecords.filter((r) => r.status === 'submitted');
 
@@ -82,5 +114,5 @@ export function useEvaluationAggregation(): InstructorSummary[] {
     );
 
     return summaries.sort((a, b) => (b.overallRating ?? 0) - (a.overallRating ?? 0));
-  }, []);
+  }, [evalRecords, evalCategories, evalQuestions, classOfferings, subjects, instructors]);
 }

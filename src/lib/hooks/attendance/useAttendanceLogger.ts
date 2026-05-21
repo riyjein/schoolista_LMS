@@ -8,6 +8,7 @@ import {
   getRecordForStudentSession,
 } from '../../data/attendance/attendance-records';
 import { classOfferings } from '../../data/attendance/class-offerings';
+import { insertRow } from '../../supabase/queries';
 
 let _logCounter = 10000;
 
@@ -47,6 +48,22 @@ export function useAttendanceLogger() {
     };
 
     addAttendanceRecord(record);
+    // Supabase CRUD goes here: insert the attendance row and let the unique
+    // (session_id, student_id) constraint protect against duplicate taps.
+    void insertRow('attendance_records', {
+      id: record.id,
+      session_id: record.sessionId,
+      student_id: record.studentId,
+      class_id: record.classId,
+      subject_id: record.subjectId,
+      instructor_id: record.instructorId,
+      section_code: record.sectionCode,
+      record_date: record.date,
+      time_in: record.timeIn,
+      status: record.status,
+      remarks: record.remarks ?? null,
+      rfid_card_id: record.rfidCardId ?? null,
+    });
     return record;
   }, []);
 

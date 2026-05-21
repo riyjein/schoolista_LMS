@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
-import { attendanceRecords } from '../../data/attendance/attendance-records';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { attendanceSessions } from '../../data/attendance/attendance-sessions';
-import { subjects } from '../../data/enrollment/subjects';
-import { instructors } from '../../data/attendance/instructors';
-import { gradeStudents } from '../../data/grades/grades';
+import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { attendanceSessions as fallbackAttendanceSessions } from '../../data/attendance/attendance-sessions';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { gradeStudents as fallbackGradeStudents } from '../../data/grades/grades';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 import type { AttendanceSummary } from '../../types/attendance';
 
 export interface ClassAttendanceReport {
@@ -51,6 +52,33 @@ function summarizeForStudent(records: typeof attendanceRecords, studentId: strin
 }
 
 export function useAttendanceReports() {
+  const { data: attendanceRecords } = useSupabaseTable({
+    table: 'attendance_records_view',
+    fallback: fallbackAttendanceRecords,
+    orderBy: 'date',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: attendanceSessions } = useSupabaseTable({
+    table: 'attendance_sessions_view',
+    fallback: fallbackAttendanceSessions,
+    orderBy: 'date',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: instructors } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+  const gradeStudents = fallbackGradeStudents;
+
   return useMemo<{ classReports: ClassAttendanceReport[]; overall: OverallReportStats }>(() => {
     const classReports: ClassAttendanceReport[] = classOfferings.map((offering) => {
       const subject = subjects.find((s) => s.id === offering.subjectId);
@@ -121,5 +149,5 @@ export function useAttendanceReports() {
       classReports: classReports.sort((a, b) => a.summary.attendanceRate - b.summary.attendanceRate),
       overall,
     };
-  }, []);
+  }, [attendanceRecords, classOfferings, attendanceSessions, subjects, instructors]);
 }

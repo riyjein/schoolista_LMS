@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { studentProfiles } from '../../data/enrollment/students';
-import { enrollmentHistory } from '../../data/enrollment/enrollment-history';
-import { subjects } from '../../data/enrollment/subjects';
-import { facultyLoads } from '../../data/grading/faculty-loads';
-import { courses } from '../../data/enrollment/courses';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { studentProfiles as fallbackStudentProfiles } from '../../data/enrollment/students';
+import { enrollmentHistory as fallbackEnrollmentHistory } from '../../data/enrollment/enrollment-history';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { facultyLoads as fallbackFacultyLoads } from '../../data/grading/faculty-loads';
+import { courses as fallbackCourses } from '../../data/enrollment/courses';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface FacultyStudentEntry {
   id: string;
@@ -19,19 +20,50 @@ export interface FacultyStudentEntry {
 }
 
 export const useFacultyStudents = (instructorId: string) => {
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: studentProfiles } = useSupabaseTable({
+    table: 'student_profiles',
+    fallback: fallbackStudentProfiles,
+    orderBy: 'student_number',
+  });
+  const { data: enrollmentHistory } = useSupabaseTable({
+    table: 'enrollment_records_view',
+    fallback: fallbackEnrollmentHistory,
+    orderBy: 'submitted_at',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: facultyLoads } = useSupabaseTable({
+    table: 'faculty_loads',
+    fallback: fallbackFacultyLoads,
+    orderBy: 'id',
+  });
+  const { data: courses } = useSupabaseTable({
+    table: 'courses',
+    fallback: fallbackCourses,
+    orderBy: 'code',
+  });
+
   const [selectedSubject, setSelectedSubject] = useState<string>('all');
   const [selectedSection, setSelectedSection] = useState<string>('all');
 
   // Get all classes taught by this instructor
   const instructorClasses = useMemo(() => {
     return classOfferings.filter((c) => c.instructorId === instructorId);
-  }, [instructorId]);
+  }, [instructorId, classOfferings]);
 
   // Get unique subjects taught
   const taughtSubjects = useMemo(() => {
     const subjectIds = [...new Set(instructorClasses.map((c) => c.subjectId))];
     return subjects.filter((s) => subjectIds.includes(s.id));
-  }, [instructorClasses]);
+  }, [instructorClasses, subjects]);
 
   // Get unique sections taught
   const taughtSections = useMemo(() => {
@@ -102,7 +134,7 @@ export const useFacultyStudents = (instructorId: string) => {
     });
 
     return studentEntries;
-  }, [instructorClasses, selectedSubject, selectedSection]);
+  }, [instructorClasses, selectedSubject, selectedSection, classOfferings, studentProfiles, enrollmentHistory, subjects, facultyLoads, courses]);
 
   return {
     students,

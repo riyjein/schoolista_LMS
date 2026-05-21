@@ -10,6 +10,8 @@ import { getPassedSubjectIdsForStudent } from '../data/enrollment/completed-subj
 import { addSessionEnrollment } from '../data/enrollment/enrollment-history';
 import { addSessionReceipt } from '../data/enrollment/receipts';
 import type { ReceiptRecord } from '../types/enrollment';
+import { insertRow } from '../supabase/queries';
+import { updateRow } from '../supabase/queries';
 
 const TOTAL_STEPS = 6;
 
@@ -177,6 +179,27 @@ export function useEnrollmentFlow({
       };
 
       addSessionEnrollment(record);
+      // Supabase CRUD goes here: persist the enrollment header plus the
+      // enrollment_record_subjects rows selected in this step.
+      void insertRow('enrollment_records', {
+        id: record.id,
+        reference_number: record.referenceNumber,
+        student_id: record.studentId,
+        course_id: record.courseId,
+        year_level: record.yearLevel,
+        semester: record.semester,
+        school_year: record.schoolYear,
+        total_units: record.totalUnits,
+        status: record.status,
+        submitted_at: record.submittedAt,
+        receipt_id: null,
+      });
+      void Promise.all(prev.selectedSubjectIds.map((subjectId) =>
+        insertRow('enrollment_record_subjects', {
+          enrollment_id: enrollmentId,
+          subject_id: subjectId,
+        }),
+      ));
 
       if (prev.receiptFile) {
         const receipt: ReceiptRecord = {
@@ -193,6 +216,19 @@ export function useEnrollmentFlow({
         };
         addSessionReceipt(receipt);
         record.receiptId = receipt.id;
+        void insertRow('receipts', {
+          id: receipt.id,
+          student_id: receipt.studentId,
+          enrollment_id: receipt.enrollmentId,
+          filename: receipt.filename,
+          file_size: receipt.fileSize,
+          uploaded_at: receipt.uploadedAt,
+          amount: receipt.amount,
+          reference_number: receipt.referenceNumber,
+          status: receipt.status,
+          preview_url: receipt.previewUrl ?? null,
+        });
+        void updateRow('enrollment_records', 'id', enrollmentId, { receipt_id: receipt.id });
       }
 
       return { ...prev, enrollmentRecord: record, currentStep: 6 };

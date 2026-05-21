@@ -1,19 +1,29 @@
 import { useMemo } from 'react';
 import type { DLQualification, DLBadge } from '../../types/grades';
 import { dlRules } from '../../data/grades/dl-rules';
-import { getGradesForStudent } from '../../data/grades/grades';
-import { subjects } from '../../data/enrollment/subjects';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
 import { computeOverallGrade } from './useGradeComputation';
 import { gradeSettings } from '../../data/grades/grade-settings';
 import { useGPAComputation } from './useGPAComputation';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export function useDLQualification(studentId: string): DLQualification {
   const gpaResult = useGPAComputation(studentId, true);
+  const { data: gradeRecords } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
 
   return useMemo(() => {
     const disqualifiers: string[] = [];
-    const records = getGradesForStudent(studentId);
-    const finalized = records.filter((r) => r.status === 'finalized');
+    const records = gradeRecords.filter((r) => r.studentId === studentId);
 
     // Must have minimum units finalized
     if (gpaResult.finalizedUnits < dlRules.minUnits) {
@@ -58,5 +68,5 @@ export function useDLQualification(studentId: string): DLQualification {
     }
 
     return { qualified, badge, gpa, disqualifiers };
-  }, [studentId, gpaResult]);
+  }, [studentId, gpaResult, gradeRecords, subjects]);
 }

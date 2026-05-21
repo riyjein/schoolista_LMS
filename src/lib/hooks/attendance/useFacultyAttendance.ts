@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback } from 'react';
-import { getRecordsForClass } from '../../data/attendance/attendance-records';
-import { classOfferings, getClassesForInstructor } from '../../data/attendance/class-offerings';
-import { subjects } from '../../data/enrollment/subjects';
-import { attendanceSessions } from '../../data/attendance/attendance-sessions';
-import { gradeStudents } from '../../data/grades/grades';
+import { attendanceRecords as fallbackAttendanceRecords, getRecordsForClass } from '../../data/attendance/attendance-records';
+import { classOfferings as fallbackClassOfferings, getClassesForInstructor } from '../../data/attendance/class-offerings';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { attendanceSessions as fallbackAttendanceSessions } from '../../data/attendance/attendance-sessions';
+import { gradeStudents as fallbackGradeStudents } from '../../data/grades/grades';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 import type { AttendanceStatus, AttendanceSummary } from '../../types/attendance';
 
 export interface StudentAttendanceRow {
@@ -46,6 +47,28 @@ function summarize(
 }
 
 export function useFacultyAttendance(instructorId: string) {
+  const { data: attendanceRecords } = useSupabaseTable({
+    table: 'attendance_records_view',
+    fallback: fallbackAttendanceRecords,
+    orderBy: 'date',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: attendanceSessions } = useSupabaseTable({
+    table: 'attendance_sessions_view',
+    fallback: fallbackAttendanceSessions,
+    orderBy: 'date',
+  });
+  const gradeStudents = fallbackGradeStudents;
+
   const instructorClasses = useMemo<FacultyClassInfo[]>(() => {
     return getClassesForInstructor(instructorId).map((offering) => {
       const subject = subjects.find((s) => s.id === offering.subjectId);
@@ -75,8 +98,8 @@ export function useFacultyAttendance(instructorId: string) {
   const effectiveClassId = selectedClass?.classId ?? '';
 
   const classRecords = useMemo(
-    () => getRecordsForClass(effectiveClassId),
-    [effectiveClassId],
+    () => attendanceRecords.filter((r) => r.classId === effectiveClassId),
+    [attendanceRecords, effectiveClassId],
   );
 
   const filteredRecords = useMemo(() => {

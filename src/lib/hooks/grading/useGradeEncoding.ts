@@ -1,12 +1,18 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { GradeStatus } from '../../types/grades';
-import { gradeRecords, gradeStudents, getGradesForClass, updateGradeRecord } from '../../data/grades/grades';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { subjects } from '../../data/enrollment/subjects';
+import {
+  gradeRecords as fallbackGradeRecords,
+  gradeStudents,
+  updateGradeRecord,
+} from '../../data/grades/grades';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
 import { gradeSettings } from '../../data/grades/grade-settings';
 import { computeGrade, type GradeComputationResult } from './useGradeComputation';
 import { addSubmissionLog } from '../../data/grading/grading-submissions';
 import type { FieldValidation } from './useGradeValidation';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { updateRow } from '../../supabase/queries';
 
 export interface GradeEdit {
   prelim: number | null;
@@ -45,6 +51,9 @@ function buildRow(
   localEdits: Record<string, GradeEdit>,
   statusOverrides: Record<string, GradeStatus>,
   classId: string,
+  gradeRecords: typeof fallbackGradeRecords,
+  classOfferings: typeof fallbackClassOfferings,
+  subjects: typeof fallbackSubjects,
 ): GradeRow | null {
   const record = gradeRecords.find((r) => r.id === recordId);
   if (!record) return null;
@@ -110,20 +119,35 @@ export interface UseGradeEncodingReturn {
 }
 
 export function useGradeEncoding(instructorId: string, classId: string): UseGradeEncodingReturn {
+  const { data: gradeRecords } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
   const [localEdits, setLocalEdits] = useState<Record<string, GradeEdit>>({});
   const [statusOverrides, setStatusOverrides] = useState<Record<string, GradeStatus>>({});
 
   const recordIds = useMemo(
-    () => getGradesForClass(classId).map((r) => r.id),
-    [classId],
+    () => gradeRecords.filter((r) => r.classId === classId).map((r) => r.id),
+    [classId, gradeRecords],
   );
 
   const rows = useMemo<GradeRow[]>(() => {
     return recordIds
-      .map((id) => buildRow(id, localEdits, statusOverrides, classId))
+      .map((id) => buildRow(id, localEdits, statusOverrides, classId, gradeRecords, classOfferings, subjects))
       .filter((r): r is GradeRow => r !== null)
       .sort((a, b) => a.studentName.localeCompare(b.studentName));
-  }, [recordIds, localEdits, statusOverrides, classId]);
+  }, [recordIds, localEdits, statusOverrides, classId, gradeRecords, classOfferings, subjects]);
 
   const updateGrade = useCallback(
     (recordId: string, field: keyof GradeEdit, value: number | null) => {
@@ -158,6 +182,12 @@ export function useGradeEncoding(instructorId: string, classId: string): UseGrad
         finalGrade: edit.final,
         status: 'draft',
       });
+      void updateRow('grade_records', 'id', recordId, {
+        prelim_grade: edit.prelim,
+        midterm_grade: edit.midterm,
+        final_grade: edit.final,
+        status: 'draft',
+      });
 
       addSubmissionLog(classId, instructorId, 'save_draft', [record.studentId]);
 
@@ -184,6 +214,12 @@ export function useGradeEncoding(instructorId: string, classId: string): UseGrad
       if (prelim === null || midterm === null || final === null) return;
 
       updateGradeRecord(recordId, { prelimGrade: prelim, midtermGrade: midterm, finalGrade: final, status: 'submitted' });
+      void updateRow('grade_records', 'id', recordId, {
+        prelim_grade: prelim,
+        midterm_grade: midterm,
+        final_grade: final,
+        status: 'submitted',
+      });
       addSubmissionLog(classId, instructorId, 'submit', [record.studentId]);
 
       setLocalEdits((prev) => { const n = { ...prev }; delete n[recordId]; return n; });
@@ -199,6 +235,7 @@ export function useGradeEncoding(instructorId: string, classId: string): UseGrad
       if (!record || effectiveStatus !== 'submitted') return;
 
       updateGradeRecord(recordId, { status: 'finalized' });
+      void updateRow('grade_records', 'id', recordId, { status: 'finalized' });
       addSubmissionLog(classId, instructorId, 'finalize', [record.studentId]);
 
       setLocalEdits((prev) => { const n = { ...prev }; delete n[recordId]; return n; });
@@ -218,6 +255,12 @@ export function useGradeEncoding(instructorId: string, classId: string): UseGrad
       if (Object.values(row.fieldErrors).some(Boolean)) continue;
 
       updateGradeRecord(row.recordId, { prelimGrade: prelim, midtermGrade: midterm, finalGrade: final, status: 'submitted' });
+      void updateRow('grade_records', 'id', row.recordId, {
+        prelim_grade: prelim,
+        midterm_grade: midterm,
+        final_grade: final,
+        status: 'submitted',
+      });
       setStatusOverrides((prev) => ({ ...prev, [row.recordId]: 'submitted' }));
       submitted.push(row.studentId);
     }
@@ -233,6 +276,7 @@ export function useGradeEncoding(instructorId: string, classId: string): UseGrad
     for (const row of rows) {
       if (row.effectiveStatus !== 'submitted') continue;
       updateGradeRecord(row.recordId, { status: 'finalized' });
+      void updateRow('grade_records', 'id', row.recordId, { status: 'finalized' });
       setStatusOverrides((prev) => ({ ...prev, [row.recordId]: 'finalized' }));
       finalized.push(row.studentId);
     }

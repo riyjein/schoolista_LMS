@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { AttendanceSession } from '../../types/attendance';
 import {
-  attendanceSessions,
+  attendanceSessions as fallbackAttendanceSessions,
   demoSessions,
   getAllSessions,
   getSessionById,
@@ -9,6 +9,7 @@ import {
   getSessionsForDate,
   getDemoSessionsForDay,
 } from '../../data/attendance/attendance-sessions';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface UseAttendanceSessionsReturn {
   sessions: AttendanceSession[];
@@ -22,9 +23,15 @@ export interface UseAttendanceSessionsReturn {
 }
 
 export function useAttendanceSessions(classId?: string): UseAttendanceSessionsReturn {
+  const { data: attendanceSessions } = useSupabaseTable({
+    table: 'attendance_sessions_view',
+    fallback: fallbackAttendanceSessions,
+    orderBy: 'date',
+  });
+
   const sessions = useMemo(
     () => (classId ? getSessionsForClass(classId) : attendanceSessions),
-    [classId],
+    [classId, attendanceSessions],
   );
 
   const getSessionsInDateRange = useMemo(

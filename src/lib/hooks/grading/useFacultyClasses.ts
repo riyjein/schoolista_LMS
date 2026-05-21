@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { getLoadsByInstructor, type FacultyLoad } from '../../data/grading/faculty-loads';
-import { subjects } from '../../data/enrollment/subjects';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { gradeRecords } from '../../data/grades/grades';
+import { type FacultyLoad, facultyLoads as fallbackLoads } from '../../data/grading/faculty-loads';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
 import type { GradeStatus } from '../../types/grades';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface FacultyClassInfo extends FacultyLoad {
   subjectCode: string;
@@ -17,8 +18,29 @@ export interface FacultyClassInfo extends FacultyLoad {
 }
 
 export function useFacultyClasses(instructorId: string): FacultyClassInfo[] {
+  const { data: facultyLoads } = useSupabaseTable({
+    table: 'faculty_loads',
+    fallback: fallbackLoads,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: gradeRecords } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+
   return useMemo(() => {
-    const loads = getLoadsByInstructor(instructorId);
+    const loads = facultyLoads.filter((l) => l.instructorId === instructorId);
 
     return loads.map((load) => {
       const subject = subjects.find((s) => s.id === load.subjectId);
@@ -45,5 +67,5 @@ export function useFacultyClasses(instructorId: string): FacultyClassInfo[] {
         completionPercent: total > 0 ? Math.round((finalized / total) * 100) : 0,
       };
     });
-  }, [instructorId]);
+  }, [instructorId, facultyLoads, subjects, classOfferings, gradeRecords]);
 }

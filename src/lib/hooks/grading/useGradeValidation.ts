@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
-import { gradeRecords } from '../../data/grades/grades';
-import { classOfferings } from '../../data/attendance/class-offerings';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface FieldValidation {
   prelim?: string;
@@ -26,17 +27,28 @@ function validateRange(value: number | null): string | undefined {
 }
 
 export function useGradeValidation(instructorId: string, classId: string) {
+  const { data: gradeRecords } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+
   const isAuthorized = useCallback((): boolean => {
     const offering = classOfferings.find((o) => o.id === classId);
     return offering?.instructorId === instructorId;
-  }, [instructorId, classId]);
+  }, [instructorId, classId, classOfferings]);
 
   const isStudentEnrolled = useCallback(
     (studentId: string): boolean => {
       const offering = classOfferings.find((o) => o.id === classId);
       return offering?.enrolledStudentIds.includes(studentId) ?? false;
     },
-    [classId],
+    [classId, classOfferings],
   );
 
   const validateFields = useCallback(
@@ -72,7 +84,7 @@ export function useGradeValidation(instructorId: string, classId: string) {
       if (hasFieldErrors(fieldErrors)) return { canSubmit: false, reason: 'One or more grades are out of range' };
       return { canSubmit: true };
     },
-    [isStudentEnrolled, validateFields, hasFieldErrors],
+    [gradeRecords, isStudentEnrolled, validateFields, hasFieldErrors],
   );
 
   const validateForFinalize = useCallback(
@@ -83,7 +95,7 @@ export function useGradeValidation(instructorId: string, classId: string) {
       if (record.status === 'draft') return { canFinalize: false, reason: 'Grades must be submitted before finalizing' };
       return { canFinalize: true };
     },
-    [],
+    [gradeRecords],
   );
 
   return {

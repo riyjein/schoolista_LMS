@@ -1,14 +1,25 @@
 import { useMemo } from 'react';
 import type { GPAResult } from '../../types/grades';
-import { getGradesForStudent } from '../../data/grades/grades';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { subjects } from '../../data/enrollment/subjects';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
 import { computeOverallGrade } from './useGradeComputation';
 import { gradeSettings } from '../../data/grades/grade-settings';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export function useGPAComputation(studentId: string, onlyFinalized = true): GPAResult {
+  const { data: gradeRecords } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+
   return useMemo(() => {
-    const records = getGradesForStudent(studentId);
+    const records = gradeRecords.filter((r) => r.studentId === studentId);
     const eligible = onlyFinalized ? records.filter((r) => r.status === 'finalized') : records;
 
     let totalWeighted = 0;
@@ -19,7 +30,6 @@ export function useGPAComputation(studentId: string, onlyFinalized = true): GPAR
       const computed = computeOverallGrade(r.prelimGrade, r.midtermGrade, r.finalGrade, gradeSettings);
       if (computed.gradePoint === null) continue;
 
-      const offering = classOfferings.find((o) => o.id === r.classId);
       const subject = subjects.find((s) => s.id === r.subjectId);
       const units = subject?.units ?? 0;
 
@@ -35,12 +45,11 @@ export function useGPAComputation(studentId: string, onlyFinalized = true): GPAR
       });
     }
 
-    const allRecords = getGradesForStudent(studentId);
     const finalizedUnits = eligible.reduce((sum, r) => {
       const sub = subjects.find((s) => s.id === r.subjectId);
       return sum + (sub?.units ?? 0);
     }, 0);
-    const totalEnrolledUnits = allRecords.reduce((sum, r) => {
+    const totalEnrolledUnits = records.reduce((sum, r) => {
       const sub = subjects.find((s) => s.id === r.subjectId);
       return sum + (sub?.units ?? 0);
     }, 0);
@@ -48,5 +57,5 @@ export function useGPAComputation(studentId: string, onlyFinalized = true): GPAR
     const gpa = totalUnits > 0 ? Math.round((totalWeighted / totalUnits) * 1000) / 1000 : null;
 
     return { gpa, totalUnits: totalEnrolledUnits, finalizedUnits, items };
-  }, [studentId, onlyFinalized]);
+  }, [studentId, onlyFinalized, gradeRecords, subjects]);
 }

@@ -466,11 +466,125 @@
     note text
   );
 
-  create table submission_log_students (
-    submission_log_id text not null references submission_logs(id) on delete cascade,
-    student_id text not null references student_profiles(id) on delete cascade,
-    primary key (submission_log_id, student_id)
-  );
+create table submission_log_students (
+  submission_log_id text not null references submission_logs(id) on delete cascade,
+  student_id text not null references student_profiles(id) on delete cascade,
+  primary key (submission_log_id, student_id)
+);
+
+-- Views to preserve the denormalized shapes used by the current hook layer.
+create view enrollment_records_view as
+select
+  e.id,
+  e.reference_number,
+  e.student_id,
+  e.course_id,
+  e.year_level,
+  e.semester,
+  e.school_year,
+  coalesce(array_agg(es.subject_id order by es.subject_id) filter (where es.subject_id is not null), '{}'::text[]) as subject_ids,
+  e.total_units,
+  e.status,
+  e.submitted_at,
+  e.receipt_id
+from enrollment_records e
+left join enrollment_record_subjects es on es.enrollment_id = e.id
+group by e.id;
+
+create view class_offerings_view as
+select
+  c.id,
+  c.subject_id,
+  c.instructor_id,
+  c.section_code,
+  c.school_year,
+  c.semester,
+  c.room,
+  c.max_students,
+  coalesce(array_agg(cs.student_id order by cs.student_id) filter (where cs.student_id is not null), '{}'::text[]) as enrolled_student_ids
+from class_offerings c
+left join class_offering_students cs on cs.class_id = c.id
+group by c.id;
+
+create view class_schedules_view as
+select
+  s.id,
+  s.class_id,
+  coalesce(array_agg(d.day order by d.day) filter (where d.day is not null), '{}'::day_of_week[]) as days,
+  s.start_time,
+  s.end_time,
+  s.type
+from class_schedules s
+left join class_schedule_days d on d.schedule_id = s.id
+group by s.id;
+
+create view attendance_sessions_view as
+select
+  id,
+  class_id as "classId",
+  schedule_id as "scheduleId",
+  session_date as date,
+  open_time as "openTime",
+  close_time as "closeTime",
+  late_after as "lateAfter",
+  status
+from attendance_sessions;
+
+create view attendance_records_view as
+select
+  id,
+  session_id as "sessionId",
+  student_id as "studentId",
+  class_id as "classId",
+  subject_id as "subjectId",
+  instructor_id as "instructorId",
+  section_code as "sectionCode",
+  record_date as date,
+  time_in as "timeIn",
+  status,
+  remarks,
+  rfid_card_id as "rfidCardId"
+from attendance_records;
+
+create view tuition_rates_view as
+select
+  tr.course_id,
+  tr.per_lec_unit,
+  tr.per_lab_unit,
+  coalesce(
+    jsonb_agg(jsonb_build_object('name', f.name, 'amount', f.amount) order by f.id) filter (where f.id is not null),
+    '[]'::jsonb
+  ) as misc_fees
+from tuition_rates tr
+left join tuition_misc_fees f on f.course_id = tr.course_id
+group by tr.course_id;
+
+create view evaluation_records_view as
+select
+  er.id,
+  er.student_id,
+  er.class_id,
+  er.instructor_id,
+  er.subject_id,
+  er.section_code,
+  er.semester,
+  er.school_year,
+  er.status,
+  er.submitted_at,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'questionId', ea.question_id,
+        'rating', ea.rating,
+        'comment', ea.comment
+      )
+      order by ea.question_id
+    ) filter (where ea.question_id is not null),
+    '[]'::jsonb
+  ) as answers
+from evaluation_records er
+left join evaluation_answers ea on ea.evaluation_record_id = er.id
+group by er.id;
 
   -- Helpful indexes for common lookups
   create index idx_student_profiles_course_id on student_profiles(course_id);

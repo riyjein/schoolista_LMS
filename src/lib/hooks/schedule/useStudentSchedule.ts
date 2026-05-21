@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules } from '../../data/attendance/schedules';
-import { subjects } from '../../data/enrollment/subjects';
-import { instructors } from '../../data/attendance/instructors';
-import { enrollmentHistory } from '../../data/enrollment/enrollment-history';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { enrollmentHistory as fallbackEnrollmentHistory } from '../../data/enrollment/enrollment-history';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface StudentScheduleEntry {
   id: string;
@@ -20,6 +21,32 @@ export interface StudentScheduleEntry {
 }
 
 export const useStudentSchedule = (studentId: string) => {
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: classSchedules } = useSupabaseTable({
+    table: 'class_schedules_view',
+    fallback: fallbackClassSchedules,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: instructors } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+  const { data: enrollmentHistory } = useSupabaseTable({
+    table: 'enrollment_records_view',
+    fallback: fallbackEnrollmentHistory,
+    orderBy: 'submitted_at',
+  });
+
   const schedule = useMemo(() => {
     // Get current enrollment for this student
     const currentEnrollment = enrollmentHistory.find(
@@ -65,7 +92,7 @@ export const useStudentSchedule = (studentId: string) => {
       .filter((entry): entry is StudentScheduleEntry => entry !== null);
 
     return scheduleEntries;
-  }, [studentId]);
+  }, [studentId, classOfferings, classSchedules, subjects, instructors, enrollmentHistory]);
 
   return {
     schedule,

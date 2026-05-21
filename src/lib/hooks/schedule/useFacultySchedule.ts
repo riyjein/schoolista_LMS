@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules } from '../../data/attendance/schedules';
-import { subjects } from '../../data/enrollment/subjects';
-import { facultyLoads } from '../../data/grading/faculty-loads';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { facultyLoads as fallbackFacultyLoads } from '../../data/grading/faculty-loads';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface FacultyScheduleEntry {
   id: string;
@@ -19,6 +20,27 @@ export interface FacultyScheduleEntry {
 }
 
 export const useFacultySchedule = (instructorId: string) => {
+  const { data: classOfferings } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: classSchedules } = useSupabaseTable({
+    table: 'class_schedules_view',
+    fallback: fallbackClassSchedules,
+    orderBy: 'id',
+  });
+  const { data: subjects } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: facultyLoads } = useSupabaseTable({
+    table: 'faculty_loads',
+    fallback: fallbackFacultyLoads,
+    orderBy: 'id',
+  });
+
   const schedule = useMemo(() => {
     // Get faculty loads for this instructor
     const loads = facultyLoads.filter((l) => l.instructorId === instructorId);
@@ -51,7 +73,7 @@ export const useFacultySchedule = (instructorId: string) => {
       .filter((entry): entry is FacultyScheduleEntry => entry !== null);
 
     return scheduleEntries;
-  }, [instructorId]);
+  }, [instructorId, classOfferings, classSchedules, subjects, facultyLoads]);
 
   return {
     schedule,

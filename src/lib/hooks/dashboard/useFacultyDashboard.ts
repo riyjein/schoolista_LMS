@@ -1,12 +1,13 @@
 import { useMemo } from 'react';
-import { instructors } from '../../data/attendance/instructors';
-import { facultyLoads } from '../../data/grading/faculty-loads';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules } from '../../data/attendance/schedules';
-import { subjects } from '../../data/enrollment/subjects';
-import { gradeRecords } from '../../data/grades/grades';
-import { attendanceSessions } from '../../data/attendance/attendance-sessions';
-import { evalRecords } from '../../data/evaluation/eval-records';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { facultyLoads as fallbackFacultyLoads } from '../../data/grading/faculty-loads';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
+import { attendanceSessions as fallbackAttendanceSessions } from '../../data/attendance/attendance-sessions';
+import { evalRecords as fallbackEvalRecords } from '../../data/evaluation/eval-records';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface HandledSubject {
   code: string;
@@ -49,13 +50,54 @@ export interface EvaluationSummary {
 }
 
 export const useFacultyDashboard = (instructorId: string) => {
+  const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+  const { data: facultyLoads, loading: facultyLoadsLoading } = useSupabaseTable({
+    table: 'faculty_loads',
+    fallback: fallbackFacultyLoads,
+    orderBy: 'id',
+  });
+  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
+    table: 'class_schedules_view',
+    fallback: fallbackClassSchedules,
+    orderBy: 'id',
+  });
+  const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: attendanceSessions, loading: attendanceSessionsLoading } = useSupabaseTable({
+    table: 'attendance_sessions_view',
+    fallback: fallbackAttendanceSessions,
+    orderBy: 'date',
+  });
+  const { data: evalRecords, loading: evalRecordsLoading } = useSupabaseTable({
+    table: 'evaluation_records_view',
+    fallback: fallbackEvalRecords,
+    orderBy: 'submitted_at',
+  });
+
   const profile = useMemo(() => {
     return instructors.find((i) => i.id === instructorId);
-  }, [instructorId]);
+  }, [instructorId, instructors]);
 
   const loads = useMemo(() => {
     return facultyLoads.filter((l) => l.instructorId === instructorId);
-  }, [instructorId]);
+  }, [instructorId, facultyLoads]);
 
   const handledSubjects = useMemo(() => {
     return loads.map((load) => {
@@ -72,7 +114,7 @@ export const useFacultyDashboard = (instructorId: string) => {
         room: load.room,
       } as HandledSubject;
     }).filter((s): s is HandledSubject => s !== null);
-  }, [loads]);
+  }, [loads, classOfferings, subjects]);
 
   const todaySchedule = useMemo(() => {
     const today = new Date();
@@ -119,7 +161,7 @@ export const useFacultyDashboard = (instructorId: string) => {
     });
 
     return todayClasses.sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [loads]);
+  }, [loads, classSchedules, classOfferings, subjects]);
 
   const totalEnrolledStudents = useMemo(() => {
     const studentIds = new Set<string>();
@@ -132,7 +174,7 @@ export const useFacultyDashboard = (instructorId: string) => {
     });
 
     return studentIds.size;
-  }, [loads]);
+  }, [loads, classOfferings]);
 
   const pendingGrades = useMemo(() => {
     const pending: PendingGrade[] = [];
@@ -164,7 +206,7 @@ export const useFacultyDashboard = (instructorId: string) => {
     });
 
     return pending;
-  }, [loads, instructorId]);
+  }, [loads, instructorId, gradeRecords]);
 
   const recentSessions = useMemo(() => {
     const instructorClasses = loads.map((l) => l.classId);
@@ -184,7 +226,7 @@ export const useFacultyDashboard = (instructorId: string) => {
         status: session.status,
       } as RecentSession;
     });
-  }, [loads]);
+  }, [loads, attendanceSessions, classOfferings, subjects]);
 
   const evaluationSummary = useMemo(() => {
     const evals = evalRecords.filter((e) => e.instructorId === instructorId && e.status === 'submitted');
@@ -215,7 +257,7 @@ export const useFacultyDashboard = (instructorId: string) => {
       averageRating: totalRatings / evals.length,
       subjectCount: subjectIds.size,
     } as EvaluationSummary;
-  }, [instructorId]);
+  }, [instructorId, evalRecords]);
 
   return {
     profile,
@@ -225,6 +267,14 @@ export const useFacultyDashboard = (instructorId: string) => {
     pendingGrades,
     recentSessions,
     evaluationSummary,
-    isLoading: false,
+    isLoading:
+      instructorsLoading ||
+      facultyLoadsLoading ||
+      classOfferingsLoading ||
+      classSchedulesLoading ||
+      subjectsLoading ||
+      gradeRecordsLoading ||
+      attendanceSessionsLoading ||
+      evalRecordsLoading,
   };
 };

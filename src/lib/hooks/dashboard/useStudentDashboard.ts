@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
-import { studentProfiles } from '../../data/enrollment/students';
-import { enrollmentHistory } from '../../data/enrollment/enrollment-history';
-import { subjects } from '../../data/enrollment/subjects';
-import { classOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules } from '../../data/attendance/schedules';
-import { instructors } from '../../data/attendance/instructors';
-import { attendanceRecords } from '../../data/attendance/attendance-records';
-import { gradeRecords } from '../../data/grades/grades';
-import { tuitionRates } from '../../data/enrollment/tuition-rates';
+import { studentProfiles as fallbackStudentProfiles } from '../../data/enrollment/students';
+import { enrollmentHistory as fallbackEnrollmentHistory } from '../../data/enrollment/enrollment-history';
+import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
+import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
+import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
+import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
+import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
+import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
+import { tuitionRates as fallbackTuitionRates } from '../../data/enrollment/tuition-rates';
+import { useSupabaseTable } from '../../supabase/useSupabaseTable';
 
 export interface TodayClass {
   subjectCode: string;
@@ -53,9 +54,55 @@ export interface TuitionSummary {
 }
 
 export const useStudentDashboard = (studentId: string) => {
+  const { data: studentProfiles, loading: studentProfilesLoading } = useSupabaseTable({
+    table: 'student_profiles',
+    fallback: fallbackStudentProfiles,
+    orderBy: 'student_number',
+  });
+  const { data: enrollmentHistory, loading: enrollmentHistoryLoading } = useSupabaseTable({
+    table: 'enrollment_records_view',
+    fallback: fallbackEnrollmentHistory,
+    orderBy: 'submitted_at',
+  });
+  const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
+    table: 'subjects',
+    fallback: fallbackSubjects,
+    orderBy: 'code',
+  });
+  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
+    table: 'class_offerings_view',
+    fallback: fallbackClassOfferings,
+    orderBy: 'id',
+  });
+  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
+    table: 'class_schedules_view',
+    fallback: fallbackClassSchedules,
+    orderBy: 'id',
+  });
+  const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
+    table: 'instructors',
+    fallback: fallbackInstructors,
+    orderBy: 'name',
+  });
+  const { data: attendanceRecords, loading: attendanceRecordsLoading } = useSupabaseTable({
+    table: 'attendance_records_view',
+    fallback: fallbackAttendanceRecords,
+    orderBy: 'date',
+  });
+  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable({
+    table: 'grade_records',
+    fallback: fallbackGradeRecords,
+    orderBy: 'id',
+  });
+  const { data: tuitionRates, loading: tuitionRatesLoading } = useSupabaseTable({
+    table: 'tuition_rates_view',
+    fallback: fallbackTuitionRates,
+    orderBy: 'course_id',
+  });
+
   const profile = useMemo(() => {
     return studentProfiles.find((p) => p.id === studentId);
-  }, [studentId]);
+  }, [studentId, studentProfiles]);
 
   const currentEnrollment = useMemo(() => {
     return enrollmentHistory.find(
@@ -65,7 +112,7 @@ export const useStudentDashboard = (studentId: string) => {
         e.schoolYear === '2024-2025' &&
         e.semester === '1st',
     );
-  }, [studentId]);
+  }, [studentId, enrollmentHistory]);
 
   const enrolledSubjects = useMemo(() => {
     if (!currentEnrollment) return [];
@@ -90,7 +137,7 @@ export const useStudentDashboard = (studentId: string) => {
         } as EnrolledSubject;
       })
       .filter((s): s is EnrolledSubject => s !== null);
-  }, [studentId, currentEnrollment]);
+  }, [studentId, currentEnrollment, classOfferings, subjects, instructors]);
 
   const todaySchedule = useMemo(() => {
     const today = new Date();
@@ -140,7 +187,7 @@ export const useStudentDashboard = (studentId: string) => {
     });
 
     return todayClasses.sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [studentId]);
+  }, [studentId, classOfferings, classSchedules, subjects, instructors]);
 
   const gradesSummary = useMemo(() => {
     const studentGrades = gradeRecords.filter((g) => g.studentId === studentId);
@@ -162,7 +209,7 @@ export const useStudentDashboard = (studentId: string) => {
         status: grade.status,
       } as GradeSummary;
     });
-  }, [studentId]);
+  }, [studentId, gradeRecords, subjects]);
 
   const gpa = useMemo(() => {
     const finalized = gradesSummary.filter(
@@ -192,7 +239,7 @@ export const useStudentDashboard = (studentId: string) => {
       absent,
       attendanceRate,
     } as AttendanceSummary;
-  }, [studentId]);
+  }, [studentId, attendanceRecords]);
 
   const tuitionSummary = useMemo(() => {
     if (!currentEnrollment || !profile) {
@@ -239,7 +286,7 @@ export const useStudentDashboard = (studentId: string) => {
       balance,
       status,
     } as TuitionSummary;
-  }, [currentEnrollment, profile]);
+  }, [currentEnrollment, profile, subjects, tuitionRates]);
 
   return {
     profile,
@@ -250,6 +297,15 @@ export const useStudentDashboard = (studentId: string) => {
     gpa,
     attendanceSummary,
     tuitionSummary,
-    isLoading: false,
+    isLoading:
+      studentProfilesLoading ||
+      enrollmentHistoryLoading ||
+      subjectsLoading ||
+      classOfferingsLoading ||
+      classSchedulesLoading ||
+      instructorsLoading ||
+      attendanceRecordsLoading ||
+      gradeRecordsLoading ||
+      tuitionRatesLoading,
   };
 };
