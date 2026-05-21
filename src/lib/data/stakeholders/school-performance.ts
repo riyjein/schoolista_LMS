@@ -69,6 +69,27 @@ export interface SchoolPerformance {
   academicImprovementRate: number;
 }
 
+const EMPTY_PERFORMANCE_PERIOD: PerformancePeriod = {
+  semester: '1st',
+  schoolYear: '2024-2025',
+  averageGPA: null,
+  passRate: 0,
+  failRate: 0,
+  attendanceRate: 0,
+  evaluationAverage: null,
+  dlCount: 0,
+};
+
+const EMPTY_ATTENDANCE_TREND: AttendanceTrend = {
+  semester: '1st',
+  schoolYear: '2024-2025',
+  attendanceRate: 0,
+  presentCount: 0,
+  lateCount: 0,
+  absentCount: 0,
+  totalSessions: 0,
+};
+
 // ─── Compute Program Performance ──────────────────────────────────────────────
 
 function computeProgramPerformance(): ProgramPerformance[] {
@@ -352,25 +373,27 @@ function identifyAtRiskPrograms(): AtRiskProgram[] {
 function generateSchoolPerformance(): SchoolPerformance {
   const programPerformance = computeProgramPerformance();
   const performanceTrend = computePerformanceTrend();
-  const currentPeriod = performanceTrend[performanceTrend.length - 1];
-  const previousPeriod = performanceTrend[0];
+  const currentPeriod = performanceTrend[performanceTrend.length - 1] ?? EMPTY_PERFORMANCE_PERIOD;
+  const previousPeriod = performanceTrend[0] ?? EMPTY_PERFORMANCE_PERIOD;
+  const attendanceTrend = computeAttendanceTrend();
+  const currentAttendancePeriod = attendanceTrend[attendanceTrend.length - 1] ?? EMPTY_ATTENDANCE_TREND;
 
   const topPerformingPrograms = programPerformance.slice(0, 3);
 
   const academicImprovementRate =
-    currentPeriod.averageGPA !== null && previousPeriod.averageGPA !== null
+    currentPeriod.averageGPA !== null && previousPeriod.averageGPA !== null && previousPeriod.averageGPA > 0
       ? ((currentPeriod.averageGPA - previousPeriod.averageGPA) / previousPeriod.averageGPA) * 100
       : 0;
 
   return {
     programPerformance,
     performanceTrend,
-    attendanceTrend: computeAttendanceTrend(),
+    attendanceTrend,
     topPerformingPrograms,
     atRiskPrograms: identifyAtRiskPrograms(),
     overallAverageGPA: currentPeriod.averageGPA,
     overallPassRate: currentPeriod.passRate,
-    overallAttendanceRate: currentPeriod.attendanceRate,
+    overallAttendanceRate: currentAttendancePeriod.attendanceRate,
     overallEvaluationAverage: currentPeriod.evaluationAverage,
     totalDLStudents: currentPeriod.dlCount,
     academicImprovementRate,

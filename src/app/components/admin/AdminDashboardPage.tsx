@@ -1,9 +1,4 @@
-import { userStatistics } from '@/lib/data/admin/users';
-import { announcementStatistics } from '@/lib/data/admin/announcements';
-import { studentProfiles } from '@/lib/data/enrollment/students';
-import { courses } from '@/lib/data/enrollment/courses';
-import { subjects } from '@/lib/data/enrollment/subjects';
-import { sections } from '@/lib/data/schedule/sections';
+
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -18,9 +13,15 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useAdminDashboardMetrics } from '../../../lib/hooks/admin/useAdminDashboardMetrics';
+import { subjects } from '../../../lib/data/enrollment/subjects';
+import { courses } from '../../../lib/data/enrollment/courses';
+import { sections } from '../../../lib/data/schedule/sections';
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const { userStatistics, announcementStatistics, catalogStatistics, loading } =
+    useAdminDashboardMetrics();
 
   return (
     <div className="space-y-6">
@@ -56,7 +57,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Programs</p>
-                <p className="mt-1 text-2xl font-bold">{courses.length}</p>
+                <p className="mt-1 text-2xl font-bold">{catalogStatistics.totalPrograms}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Active programs</p>
               </div>
               <div className="rounded-full bg-purple-100 p-3">
@@ -71,7 +72,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Subjects</p>
-                <p className="mt-1 text-2xl font-bold">{subjects.length}</p>
+                <p className="mt-1 text-2xl font-bold">{catalogStatistics.totalSubjects}</p>
                 <p className="mt-1 text-xs text-muted-foreground">In catalog</p>
               </div>
               <div className="rounded-full bg-green-100 p-3">
@@ -262,6 +263,10 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {loading && (
+        <p className="text-sm text-muted-foreground">Refreshing dashboard metrics...</p>
+      )}
     </div>
   );
 }

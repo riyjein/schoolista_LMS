@@ -141,7 +141,7 @@ export const announcements: Announcement[] = [
 
 // ─── Compute Statistics ───────────────────────────────────────────────────────
 
-function computeAnnouncementStatistics(): AnnouncementStatistics {
+export function computeAnnouncementStatistics(): AnnouncementStatistics {
   return {
     totalAnnouncements: announcements.length,
     publishedAnnouncements: announcements.filter((a) => a.status === 'published').length,

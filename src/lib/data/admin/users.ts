@@ -14,6 +14,7 @@ export interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
+  avatarInitials?: string;
   createdAt: string;
   lastLogin: string | null;
   // Role-specific identifiers
@@ -124,7 +125,7 @@ function generateUsers(): User[] {
 
 // ─── Compute Statistics ───────────────────────────────────────────────────────
 
-function computeUserStatistics(users: User[]): UserStatistics {
+export function computeUserStatistics(users: User[]): UserStatistics {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 

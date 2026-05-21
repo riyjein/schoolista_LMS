@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
-import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useCallback } from "react";
+import { gradeRecords as fallbackGradeRecords } from "../../data/grades/grades";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface FieldValidation {
   prelim?: string;
@@ -21,21 +21,21 @@ export interface FinalizeValidation {
 
 function validateRange(value: number | null): string | undefined {
   if (value === null) return undefined;
-  if (isNaN(value)) return 'Must be a number';
-  if (value < 0 || value > 100) return 'Grade must be 0–100';
+  if (isNaN(value)) return "Must be a number";
+  if (value < 0 || value > 100) return "Grade must be 0–100";
   return undefined;
 }
 
 export function useGradeValidation(instructorId: string, classId: string) {
   const { data: gradeRecords } = useSupabaseTable({
-    table: 'grade_records',
+    table: "grade_records",
     fallback: fallbackGradeRecords,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
 
   const isAuthorized = useCallback((): boolean => {
@@ -52,7 +52,11 @@ export function useGradeValidation(instructorId: string, classId: string) {
   );
 
   const validateFields = useCallback(
-    (prelim: number | null, midterm: number | null, final: number | null): FieldValidation => {
+    (
+      prelim: number | null,
+      midterm: number | null,
+      final: number | null,
+    ): FieldValidation => {
       const errors: FieldValidation = {};
       const p = validateRange(prelim);
       const m = validateRange(midterm);
@@ -72,16 +76,33 @@ export function useGradeValidation(instructorId: string, classId: string) {
   );
 
   const validateForSubmit = useCallback(
-    (recordId: string, prelim: number | null, midterm: number | null, final: number | null): SubmitValidation => {
+    (
+      recordId: string,
+      prelim: number | null,
+      midterm: number | null,
+      final: number | null,
+    ): SubmitValidation => {
       const record = gradeRecords.find((r) => r.id === recordId);
-      if (!record) return { canSubmit: false, reason: 'Record not found' };
-      if (record.status === 'finalized') return { canSubmit: false, reason: 'Grade is already finalized' };
-      if (!isStudentEnrolled(record.studentId)) return { canSubmit: false, reason: 'Student is not enrolled in this class' };
-      if (prelim === null) return { canSubmit: false, reason: 'Prelim grade is required' };
-      if (midterm === null) return { canSubmit: false, reason: 'Midterm grade is required' };
-      if (final === null) return { canSubmit: false, reason: 'Final grade is required' };
+      if (!record) return { canSubmit: false, reason: "Record not found" };
+      if (record.status === "finalized")
+        return { canSubmit: false, reason: "Grade is already finalized" };
+      if (!isStudentEnrolled(record.studentId))
+        return {
+          canSubmit: false,
+          reason: "Student is not enrolled in this class",
+        };
+      if (prelim === null)
+        return { canSubmit: false, reason: "Prelim grade is required" };
+      if (midterm === null)
+        return { canSubmit: false, reason: "Midterm grade is required" };
+      if (final === null)
+        return { canSubmit: false, reason: "Final grade is required" };
       const fieldErrors = validateFields(prelim, midterm, final);
-      if (hasFieldErrors(fieldErrors)) return { canSubmit: false, reason: 'One or more grades are out of range' };
+      if (hasFieldErrors(fieldErrors))
+        return {
+          canSubmit: false,
+          reason: "One or more grades are out of range",
+        };
       return { canSubmit: true };
     },
     [gradeRecords, isStudentEnrolled, validateFields, hasFieldErrors],
@@ -90,9 +111,14 @@ export function useGradeValidation(instructorId: string, classId: string) {
   const validateForFinalize = useCallback(
     (recordId: string): FinalizeValidation => {
       const record = gradeRecords.find((r) => r.id === recordId);
-      if (!record) return { canFinalize: false, reason: 'Record not found' };
-      if (record.status === 'finalized') return { canFinalize: false, reason: 'Already finalized' };
-      if (record.status === 'draft') return { canFinalize: false, reason: 'Grades must be submitted before finalizing' };
+      if (!record) return { canFinalize: false, reason: "Record not found" };
+      if (record.status === "finalized")
+        return { canFinalize: false, reason: "Already finalized" };
+      if (record.status === "draft")
+        return {
+          canFinalize: false,
+          reason: "Grades must be submitted before finalizing",
+        };
       return { canFinalize: true };
     },
     [gradeRecords],

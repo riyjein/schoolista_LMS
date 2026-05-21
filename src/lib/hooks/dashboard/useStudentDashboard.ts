@@ -1,14 +1,14 @@
-import { useMemo } from 'react';
-import { studentProfiles as fallbackStudentProfiles } from '../../data/enrollment/students';
-import { enrollmentHistory as fallbackEnrollmentHistory } from '../../data/enrollment/enrollment-history';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
-import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
-import { tuitionRates as fallbackTuitionRates } from '../../data/enrollment/tuition-rates';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useMemo } from "react";
+import { studentProfiles as fallbackStudentProfiles } from "../../data/enrollment/students";
+import { enrollmentHistory as fallbackEnrollmentHistory } from "../../data/enrollment/enrollment-history";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { classSchedules as fallbackClassSchedules } from "../../data/attendance/schedules";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { attendanceRecords as fallbackAttendanceRecords } from "../../data/attendance/attendance-records";
+import { gradeRecords as fallbackGradeRecords } from "../../data/grades/grades";
+import { tuitionRates as fallbackTuitionRates } from "../../data/enrollment/tuition-rates";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface TodayClass {
   subjectCode: string;
@@ -17,7 +17,7 @@ export interface TodayClass {
   room: string;
   startTime: string;
   endTime: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
+  status: "upcoming" | "ongoing" | "completed";
 }
 
 export interface EnrolledSubject {
@@ -35,7 +35,7 @@ export interface GradeSummary {
   midterm: number | null;
   final: number | null;
   average: number | null;
-  status: 'draft' | 'submitted' | 'finalized';
+  status: "draft" | "submitted" | "finalized";
 }
 
 export interface AttendanceSummary {
@@ -50,55 +50,64 @@ export interface TuitionSummary {
   totalAmount: number;
   paid: number;
   balance: number;
-  status: 'paid' | 'partial' | 'unpaid';
+  status: "paid" | "partial" | "unpaid";
 }
 
 export const useStudentDashboard = (studentId: string) => {
-  const { data: studentProfiles, loading: studentProfilesLoading } = useSupabaseTable({
-    table: 'student_profiles',
-    fallback: fallbackStudentProfiles,
-    orderBy: 'student_number',
-  });
-  const { data: enrollmentHistory, loading: enrollmentHistoryLoading } = useSupabaseTable({
-    table: 'enrollment_records_view',
-    fallback: fallbackEnrollmentHistory,
-    orderBy: 'submitted_at',
-  });
+  const { data: studentProfiles, loading: studentProfilesLoading } =
+    useSupabaseTable({
+      table: "student_profiles",
+      fallback: fallbackStudentProfiles,
+      orderBy: "student_number",
+    });
+  const { data: enrollmentHistory, loading: enrollmentHistoryLoading } =
+    useSupabaseTable({
+      table: "enrollment_records",
+      fallback: fallbackEnrollmentHistory,
+      orderBy: "submitted_at",
+    });
   const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
-  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
-    table: 'class_offerings_view',
-    fallback: fallbackClassOfferings,
-    orderBy: 'id',
-  });
-  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
-    table: 'class_schedules_view',
-    fallback: fallbackClassSchedules,
-    orderBy: 'id',
-  });
+  const { data: classOfferings, loading: classOfferingsLoading } =
+    useSupabaseTable({
+      table: "class_offerings",
+      fallback: fallbackClassOfferings,
+      orderBy: "id",
+    });
+  const { data: classSchedules, loading: classSchedulesLoading } =
+    useSupabaseTable({
+      table: "class_schedules",
+      fallback: fallbackClassSchedules,
+      orderBy: "id",
+    });
   const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
-  const { data: attendanceRecords, loading: attendanceRecordsLoading } = useSupabaseTable({
-    table: 'attendance_records_view',
-    fallback: fallbackAttendanceRecords,
-    orderBy: 'date',
-  });
-  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable({
-    table: 'grade_records',
-    fallback: fallbackGradeRecords,
-    orderBy: 'id',
-  });
-  const { data: tuitionRates, loading: tuitionRatesLoading } = useSupabaseTable({
-    table: 'tuition_rates_view',
-    fallback: fallbackTuitionRates,
-    orderBy: 'course_id',
-  });
+  const { data: attendanceRecords, loading: attendanceRecordsLoading } =
+    useSupabaseTable({
+      table: "attendance_records",
+      fallback: fallbackAttendanceRecords,
+      orderBy: "date",
+    });
+  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable(
+    {
+      table: "grade_records",
+      fallback: fallbackGradeRecords,
+      orderBy: "id",
+    },
+  );
+  const { data: tuitionRates, loading: tuitionRatesLoading } = useSupabaseTable(
+    {
+      table: "tuition_rates",
+      fallback: fallbackTuitionRates,
+      orderBy: "course_id",
+    },
+  );
 
   const profile = useMemo(() => {
     return studentProfiles.find((p) => p.id === studentId);
@@ -108,9 +117,9 @@ export const useStudentDashboard = (studentId: string) => {
     return enrollmentHistory.find(
       (e) =>
         e.studentId === studentId &&
-        e.status === 'approved' &&
-        e.schoolYear === '2024-2025' &&
-        e.semester === '1st',
+        e.status === "approved" &&
+        e.schoolYear === "2024-2025" &&
+        e.semester === "1st",
     );
   }, [studentId, enrollmentHistory]);
 
@@ -124,7 +133,9 @@ export const useStudentDashboard = (studentId: string) => {
     return studentClasses
       .map((classOffering) => {
         const subject = subjects.find((s) => s.id === classOffering.subjectId);
-        const instructor = instructors.find((i) => i.id === classOffering.instructorId);
+        const instructor = instructors.find(
+          (i) => i.id === classOffering.instructorId,
+        );
 
         if (!subject || !instructor) return null;
 
@@ -141,7 +152,7 @@ export const useStudentDashboard = (studentId: string) => {
 
   const todaySchedule = useMemo(() => {
     const today = new Date();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const todayName = dayNames[today.getDay()];
 
     const studentClasses = classOfferings.filter((c) =>
@@ -152,25 +163,30 @@ export const useStudentDashboard = (studentId: string) => {
 
     studentClasses.forEach((classOffering) => {
       const schedule = classSchedules.find(
-        (s) => s.classId === classOffering.id && s.days.includes(todayName as any),
+        (s) =>
+          s.classId === classOffering.id && s.days.includes(todayName as any),
       );
 
       if (schedule) {
         const subject = subjects.find((s) => s.id === classOffering.subjectId);
-        const instructor = instructors.find((i) => i.id === classOffering.instructorId);
+        const instructor = instructors.find(
+          (i) => i.id === classOffering.instructorId,
+        );
 
         if (subject && instructor) {
           const now = today.getHours() * 60 + today.getMinutes();
-          const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-          const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+          const [startHour, startMin] = schedule.startTime
+            .split(":")
+            .map(Number);
+          const [endHour, endMin] = schedule.endTime.split(":").map(Number);
           const startMinutes = startHour * 60 + startMin;
           const endMinutes = endHour * 60 + endMin;
 
-          let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+          let status: "upcoming" | "ongoing" | "completed" = "upcoming";
           if (now >= startMinutes && now < endMinutes) {
-            status = 'ongoing';
+            status = "ongoing";
           } else if (now >= endMinutes) {
-            status = 'completed';
+            status = "completed";
           }
 
           todayClasses.push({
@@ -195,13 +211,15 @@ export const useStudentDashboard = (studentId: string) => {
     return studentGrades.map((grade) => {
       const subject = subjects.find((s) => s.id === grade.subjectId);
       const avg =
-        grade.prelimGrade !== null && grade.midtermGrade !== null && grade.finalGrade !== null
+        grade.prelimGrade !== null &&
+        grade.midtermGrade !== null &&
+        grade.finalGrade !== null
           ? (grade.prelimGrade + grade.midtermGrade + grade.finalGrade) / 3
           : null;
 
       return {
-        subjectCode: subject?.code || 'N/A',
-        subjectName: subject?.title || 'Unknown',
+        subjectCode: subject?.code || "N/A",
+        subjectName: subject?.title || "Unknown",
         prelim: grade.prelimGrade,
         midterm: grade.midtermGrade,
         final: grade.finalGrade,
@@ -213,7 +231,7 @@ export const useStudentDashboard = (studentId: string) => {
 
   const gpa = useMemo(() => {
     const finalized = gradesSummary.filter(
-      (g) => g.average !== null && g.status === 'finalized',
+      (g) => g.average !== null && g.status === "finalized",
     );
 
     if (finalized.length === 0) return null;
@@ -223,12 +241,18 @@ export const useStudentDashboard = (studentId: string) => {
   }, [gradesSummary]);
 
   const attendanceSummary = useMemo(() => {
-    const studentAttendance = attendanceRecords.filter((a) => a.studentId === studentId);
+    const studentAttendance = attendanceRecords.filter(
+      (a) => a.studentId === studentId,
+    );
 
     const total = studentAttendance.length;
-    const present = studentAttendance.filter((a) => a.status === 'present').length;
-    const late = studentAttendance.filter((a) => a.status === 'late').length;
-    const absent = studentAttendance.filter((a) => a.status === 'absent').length;
+    const present = studentAttendance.filter(
+      (a) => a.status === "present",
+    ).length;
+    const late = studentAttendance.filter((a) => a.status === "late").length;
+    const absent = studentAttendance.filter(
+      (a) => a.status === "absent",
+    ).length;
 
     const attendanceRate = total > 0 ? ((present + late) / total) * 100 : 0;
 
@@ -247,7 +271,7 @@ export const useStudentDashboard = (studentId: string) => {
         totalAmount: 0,
         paid: 0,
         balance: 0,
-        status: 'unpaid' as const,
+        status: "unpaid" as const,
       };
     }
 
@@ -257,7 +281,7 @@ export const useStudentDashboard = (studentId: string) => {
         totalAmount: 0,
         paid: 0,
         balance: 0,
-        status: 'unpaid' as const,
+        status: "unpaid" as const,
       };
     }
 
@@ -265,8 +289,14 @@ export const useStudentDashboard = (studentId: string) => {
       currentEnrollment.subjectIds.includes(s.id),
     );
 
-    const lecUnits = enrolledSubjectsList.reduce((sum, s) => sum + s.lecUnits, 0);
-    const labUnits = enrolledSubjectsList.reduce((sum, s) => sum + s.labUnits, 0);
+    const lecUnits = enrolledSubjectsList.reduce(
+      (sum, s) => sum + s.lecUnits,
+      0,
+    );
+    const labUnits = enrolledSubjectsList.reduce(
+      (sum, s) => sum + s.labUnits,
+      0,
+    );
 
     const lecFee = lecUnits * rate.perLecUnit;
     const labFee = labUnits * rate.perLabUnit;
@@ -276,9 +306,9 @@ export const useStudentDashboard = (studentId: string) => {
     const paid = totalAmount * 0.8; // Mock: 80% paid
     const balance = totalAmount - paid;
 
-    let status: 'paid' | 'partial' | 'unpaid' = 'unpaid';
-    if (balance === 0) status = 'paid';
-    else if (paid > 0) status = 'partial';
+    let status: "paid" | "partial" | "unpaid" = "unpaid";
+    if (balance === 0) status = "paid";
+    else if (paid > 0) status = "partial";
 
     return {
       totalAmount,

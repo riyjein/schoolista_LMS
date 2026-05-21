@@ -1,26 +1,42 @@
-import { useState, useMemo, useCallback } from 'react';
-import type { GradeRecord, EnrichedGradeRecord, GradeStatus, GradeRemark } from '../../types/grades';
-import { gradeRecords as fallbackGradeRecords, gradeStudents } from '../../data/grades/grades';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { computeOverallGrade } from './useGradeComputation';
-import { gradeSettings } from '../../data/grades/grade-settings';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useState, useMemo, useCallback } from "react";
+import type {
+  GradeRecord,
+  EnrichedGradeRecord,
+  GradeStatus,
+  GradeRemark,
+} from "../../types/grades";
+import {
+  gradeRecords as fallbackGradeRecords,
+  gradeStudents,
+} from "../../data/grades/grades";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { computeOverallGrade } from "./useGradeComputation";
+import { gradeSettings } from "../../data/grades/grade-settings";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
-export type GradeSortField = 'subject' | 'overall' | 'gradePoint' | 'remarks' | 'status';
-export type SortDir = 'asc' | 'desc';
+export type GradeSortField =
+  | "subject"
+  | "overall"
+  | "gradePoint"
+  | "remarks"
+  | "status";
+export type SortDir = "asc" | "desc";
 
 export interface GradeFilters {
-  status: GradeStatus | '';
-  remarks: GradeRemark | '';
+  status: GradeStatus | "";
+  remarks: GradeRemark | "";
   search: string;
 }
 
 export interface UseGradeTableReturn {
   records: EnrichedGradeRecord[];
   filters: GradeFilters;
-  setFilter: <K extends keyof GradeFilters>(key: K, value: GradeFilters[K]) => void;
+  setFilter: <K extends keyof GradeFilters>(
+    key: K,
+    value: GradeFilters[K],
+  ) => void;
   clearFilters: () => void;
   sortField: GradeSortField;
   sortDir: SortDir;
@@ -32,7 +48,7 @@ export interface UseGradeTableReturn {
 }
 
 const PAGE_SIZE = 10;
-const DEFAULT_FILTERS: GradeFilters = { status: '', remarks: '', search: '' };
+const DEFAULT_FILTERS: GradeFilters = { status: "", remarks: "", search: "" };
 
 function enrichRecord(
   r: GradeRecord,
@@ -44,12 +60,17 @@ function enrichRecord(
   const offering = classOfferings.find((o) => o.id === r.classId);
   const subject = subjects.find((s) => s.id === r.subjectId);
   const instructor = instructors.find((i) => i.id === r.instructorId);
-  const computed = computeOverallGrade(r.prelimGrade, r.midtermGrade, r.finalGrade, gradeSettings);
+  const computed = computeOverallGrade(
+    r.prelimGrade,
+    r.midtermGrade,
+    r.finalGrade,
+    gradeSettings,
+  );
 
   return {
     ...r,
     studentName: student?.name ?? r.studentId,
-    studentNumber: student?.studentNumber ?? '',
+    studentNumber: student?.studentNumber ?? "",
     subjectCode: subject?.code ?? r.subjectId,
     subjectTitle: subject?.title ?? r.subjectId,
     subjectUnits: subject?.units ?? 0,
@@ -60,28 +81,28 @@ function enrichRecord(
 
 export function useGradeTable(studentId: string): UseGradeTableReturn {
   const { data: gradeRecords } = useSupabaseTable({
-    table: 'grade_records',
+    table: "grade_records",
     fallback: fallbackGradeRecords,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: subjects } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
   const { data: instructors } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
   const [filters, setFilters] = useState<GradeFilters>(DEFAULT_FILTERS);
-  const [sortField, setSortField] = useState<GradeSortField>('subject');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortField, setSortField] = useState<GradeSortField>("subject");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
 
   const setFilter = useCallback(
@@ -92,26 +113,33 @@ export function useGradeTable(studentId: string): UseGradeTableReturn {
     [],
   );
 
-  const clearFilters = useCallback(() => { setFilters(DEFAULT_FILTERS); setPage(1); }, []);
+  const clearFilters = useCallback(() => {
+    setFilters(DEFAULT_FILTERS);
+    setPage(1);
+  }, []);
 
   const setSort = useCallback((field: GradeSortField) => {
     setSortField((prev) => {
-      if (prev === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-      else setSortDir('asc');
+      if (prev === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      else setSortDir("asc");
       return field;
     });
     setPage(1);
   }, []);
 
   const records = useMemo(
-    () => gradeRecords.filter((r) => r.studentId === studentId).map((r) => enrichRecord(r, classOfferings, subjects, instructors)),
+    () =>
+      gradeRecords
+        .filter((r) => r.studentId === studentId)
+        .map((r) => enrichRecord(r, classOfferings, subjects, instructors)),
     [studentId, gradeRecords, classOfferings, subjects, instructors],
   );
 
   const filtered = useMemo(() => {
     let list = records;
     if (filters.status) list = list.filter((r) => r.status === filters.status);
-    if (filters.remarks) list = list.filter((r) => r.computed.remarks === filters.remarks);
+    if (filters.remarks)
+      list = list.filter((r) => r.computed.remarks === filters.remarks);
     if (filters.search) {
       const q = filters.search.toLowerCase();
       list = list.filter(
@@ -124,12 +152,16 @@ export function useGradeTable(studentId: string): UseGradeTableReturn {
 
     return [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortField === 'subject') cmp = a.subjectCode.localeCompare(b.subjectCode);
-      else if (sortField === 'overall') cmp = (a.computed.overall ?? -1) - (b.computed.overall ?? -1);
-      else if (sortField === 'gradePoint') cmp = (a.computed.gradePoint ?? 99) - (b.computed.gradePoint ?? 99);
-      else if (sortField === 'remarks') cmp = a.computed.remarks.localeCompare(b.computed.remarks);
-      else if (sortField === 'status') cmp = a.status.localeCompare(b.status);
-      return sortDir === 'asc' ? cmp : -cmp;
+      if (sortField === "subject")
+        cmp = a.subjectCode.localeCompare(b.subjectCode);
+      else if (sortField === "overall")
+        cmp = (a.computed.overall ?? -1) - (b.computed.overall ?? -1);
+      else if (sortField === "gradePoint")
+        cmp = (a.computed.gradePoint ?? 99) - (b.computed.gradePoint ?? 99);
+      else if (sortField === "remarks")
+        cmp = a.computed.remarks.localeCompare(b.computed.remarks);
+      else if (sortField === "status") cmp = a.status.localeCompare(b.status);
+      return sortDir === "asc" ? cmp : -cmp;
     });
   }, [records, filters, sortField, sortDir]);
 
@@ -139,5 +171,17 @@ export function useGradeTable(studentId: string): UseGradeTableReturn {
     [filtered, page],
   );
 
-  return { records: filtered, filters, setFilter, clearFilters, sortField, sortDir, setSort, page, totalPages, setPage, paginated };
+  return {
+    records: filtered,
+    filters,
+    setFilter,
+    clearFilters,
+    sortField,
+    sortDir,
+    setSort,
+    page,
+    totalPages,
+    setPage,
+    paginated,
+  };
 }

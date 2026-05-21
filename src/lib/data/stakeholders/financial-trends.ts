@@ -53,6 +53,19 @@ export interface FinancialTrends {
   collectionEfficiency: number;
 }
 
+const EMPTY_FINANCIAL_PERIOD: FinancialPeriod = {
+  semester: '1st',
+  schoolYear: '2024-2025',
+  totalBilled: 0,
+  totalCollected: 0,
+  outstandingBalance: 0,
+  paymentCompletionRate: 0,
+  fullPaymentCount: 0,
+  partialPaymentCount: 0,
+  unpaidCount: 0,
+  averagePaymentPerStudent: 0,
+};
+
 // ─── Compute Financial Periods ────────────────────────────────────────────────
 
 function computeFinancialPeriods(): FinancialPeriod[] {
@@ -237,7 +250,7 @@ function computeOverdueBreakdown(): OverdueBreakdown[] {
 
 function generateFinancialTrends(): FinancialTrends {
   const periods = computeFinancialPeriods();
-  const currentPeriod = periods[periods.length - 1];
+  const currentPeriod = periods[periods.length - 1] ?? EMPTY_FINANCIAL_PERIOD;
 
   const totalRevenue = periods.reduce((sum, p) => sum + p.totalCollected, 0);
   const totalBilledAllTime = periods.reduce((sum, p) => sum + p.totalBilled, 0);

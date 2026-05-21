@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { facultyLoads as fallbackFacultyLoads } from '../../data/grading/faculty-loads';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { gradeRecords as fallbackGradeRecords } from '../../data/grades/grades';
-import { attendanceSessions as fallbackAttendanceSessions } from '../../data/attendance/attendance-sessions';
-import { evalRecords as fallbackEvalRecords } from '../../data/evaluation/eval-records';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useMemo } from "react";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { facultyLoads as fallbackFacultyLoads } from "../../data/grading/faculty-loads";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { classSchedules as fallbackClassSchedules } from "../../data/attendance/schedules";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { gradeRecords as fallbackGradeRecords } from "../../data/grades/grades";
+import { attendanceSessions as fallbackAttendanceSessions } from "../../data/attendance/attendance-sessions";
+import { evalRecords as fallbackEvalRecords } from "../../data/evaluation/eval-records";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface HandledSubject {
   code: string;
@@ -25,7 +25,7 @@ export interface TodayClass {
   startTime: string;
   endTime: string;
   enrolledCount: number;
-  status: 'upcoming' | 'ongoing' | 'completed';
+  status: "upcoming" | "ongoing" | "completed";
 }
 
 export interface PendingGrade {
@@ -40,7 +40,7 @@ export interface RecentSession {
   id: string;
   subjectCode: string;
   date: string;
-  status: 'upcoming' | 'open' | 'closed';
+  status: "upcoming" | "open" | "closed";
 }
 
 export interface EvaluationSummary {
@@ -51,44 +51,51 @@ export interface EvaluationSummary {
 
 export const useFacultyDashboard = (instructorId: string) => {
   const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
-  const { data: facultyLoads, loading: facultyLoadsLoading } = useSupabaseTable({
-    table: 'faculty_loads',
-    fallback: fallbackFacultyLoads,
-    orderBy: 'id',
-  });
-  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
-    table: 'class_offerings_view',
-    fallback: fallbackClassOfferings,
-    orderBy: 'id',
-  });
-  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
-    table: 'class_schedules_view',
-    fallback: fallbackClassSchedules,
-    orderBy: 'id',
-  });
+  const { data: facultyLoads, loading: facultyLoadsLoading } = useSupabaseTable(
+    {
+      table: "faculty_loads",
+      fallback: fallbackFacultyLoads,
+      orderBy: "id",
+    },
+  );
+  const { data: classOfferings, loading: classOfferingsLoading } =
+    useSupabaseTable({
+      table: "class_offerings",
+      fallback: fallbackClassOfferings,
+      orderBy: "id",
+    });
+  const { data: classSchedules, loading: classSchedulesLoading } =
+    useSupabaseTable({
+      table: "class_schedules",
+      fallback: fallbackClassSchedules,
+      orderBy: "id",
+    });
   const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
-  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable({
-    table: 'grade_records',
-    fallback: fallbackGradeRecords,
-    orderBy: 'id',
-  });
-  const { data: attendanceSessions, loading: attendanceSessionsLoading } = useSupabaseTable({
-    table: 'attendance_sessions_view',
-    fallback: fallbackAttendanceSessions,
-    orderBy: 'date',
-  });
+  const { data: gradeRecords, loading: gradeRecordsLoading } = useSupabaseTable(
+    {
+      table: "grade_records",
+      fallback: fallbackGradeRecords,
+      orderBy: "id",
+    },
+  );
+  const { data: attendanceSessions, loading: attendanceSessionsLoading } =
+    useSupabaseTable({
+      table: "attendance_sessions",
+      fallback: fallbackAttendanceSessions,
+      orderBy: "date",
+    });
   const { data: evalRecords, loading: evalRecordsLoading } = useSupabaseTable({
-    table: 'evaluation_records_view',
+    table: "evaluation_records",
     fallback: fallbackEvalRecords,
-    orderBy: 'submitted_at',
+    orderBy: "submitted_at",
   });
 
   const profile = useMemo(() => {
@@ -100,25 +107,27 @@ export const useFacultyDashboard = (instructorId: string) => {
   }, [instructorId, facultyLoads]);
 
   const handledSubjects = useMemo(() => {
-    return loads.map((load) => {
-      const classOffering = classOfferings.find((c) => c.id === load.classId);
-      const subject = subjects.find((s) => s.id === load.subjectId);
+    return loads
+      .map((load) => {
+        const classOffering = classOfferings.find((c) => c.id === load.classId);
+        const subject = subjects.find((s) => s.id === load.subjectId);
 
-      if (!classOffering || !subject) return null;
+        if (!classOffering || !subject) return null;
 
-      return {
-        code: subject.code,
-        title: subject.title,
-        section: load.sectionCode,
-        enrolledCount: classOffering.enrolledStudentIds.length,
-        room: load.room,
-      } as HandledSubject;
-    }).filter((s): s is HandledSubject => s !== null);
+        return {
+          code: subject.code,
+          title: subject.title,
+          section: load.sectionCode,
+          enrolledCount: classOffering.enrolledStudentIds.length,
+          room: load.room,
+        } as HandledSubject;
+      })
+      .filter((s): s is HandledSubject => s !== null);
   }, [loads, classOfferings, subjects]);
 
   const todaySchedule = useMemo(() => {
     const today = new Date();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const todayName = dayNames[today.getDay()];
 
     const todayClasses: TodayClass[] = [];
@@ -134,16 +143,18 @@ export const useFacultyDashboard = (instructorId: string) => {
 
         if (subject && classOffering) {
           const now = today.getHours() * 60 + today.getMinutes();
-          const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-          const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+          const [startHour, startMin] = schedule.startTime
+            .split(":")
+            .map(Number);
+          const [endHour, endMin] = schedule.endTime.split(":").map(Number);
           const startMinutes = startHour * 60 + startMin;
           const endMinutes = endHour * 60 + endMin;
 
-          let status: 'upcoming' | 'ongoing' | 'completed' = 'upcoming';
+          let status: "upcoming" | "ongoing" | "completed" = "upcoming";
           if (now >= startMinutes && now < endMinutes) {
-            status = 'ongoing';
+            status = "ongoing";
           } else if (now >= endMinutes) {
-            status = 'completed';
+            status = "completed";
           }
 
           todayClasses.push({
@@ -187,11 +198,16 @@ export const useFacultyDashboard = (instructorId: string) => {
 
       const totalStudents = classOffering.enrolledStudentIds.length;
       const grades = gradeRecords.filter(
-        (g) => g.instructorId === instructorId && g.subjectId === load.subjectId,
+        (g) =>
+          g.instructorId === instructorId && g.subjectId === load.subjectId,
       );
 
       const pendingCount = grades.filter(
-        (g) => g.status === 'draft' || g.prelimGrade === null || g.midtermGrade === null || g.finalGrade === null,
+        (g) =>
+          g.status === "draft" ||
+          g.prelimGrade === null ||
+          g.midtermGrade === null ||
+          g.finalGrade === null,
       ).length;
 
       if (pendingCount > 0) {
@@ -216,12 +232,14 @@ export const useFacultyDashboard = (instructorId: string) => {
       .slice(0, 5);
 
     return sessions.map((session) => {
-      const classOffering = classOfferings.find((c) => c.id === session.classId);
+      const classOffering = classOfferings.find(
+        (c) => c.id === session.classId,
+      );
       const subject = subjects.find((s) => s.id === classOffering?.subjectId);
 
       return {
         id: session.id,
-        subjectCode: subject?.code || 'N/A',
+        subjectCode: subject?.code || "N/A",
         date: session.date,
         status: session.status,
       } as RecentSession;
@@ -229,7 +247,9 @@ export const useFacultyDashboard = (instructorId: string) => {
   }, [loads, attendanceSessions, classOfferings, subjects]);
 
   const evaluationSummary = useMemo(() => {
-    const evals = evalRecords.filter((e) => e.instructorId === instructorId && e.status === 'submitted');
+    const evals = evalRecords.filter(
+      (e) => e.instructorId === instructorId && e.status === "submitted",
+    );
 
     if (evals.length === 0) {
       return {

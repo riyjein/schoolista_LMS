@@ -94,19 +94,19 @@ export function useAttendanceCalendar(
 ): UseAttendanceCalendarReturn {
   const { data: attendanceRecords, loading: attendanceRecordsLoading } =
     useSupabaseTable({
-      table: "attendance_records_view",
+      table: "attendance_records",
       fallback: fallbackAttendanceRecords,
       orderBy: "date",
     });
   const { data: classOfferings, loading: classOfferingsLoading } =
     useSupabaseTable({
-      table: "class_offerings_view",
+      table: "class_offerings",
       fallback: fallbackClassOfferings,
       orderBy: "id",
     });
   const { data: classSchedules, loading: classSchedulesLoading } =
     useSupabaseTable({
-      table: "class_schedules_view",
+      table: "class_schedules",
       fallback: fallbackClassSchedules,
       orderBy: "id",
     });

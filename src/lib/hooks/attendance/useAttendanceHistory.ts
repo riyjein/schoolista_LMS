@@ -1,11 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
-import type { EnrichedAttendanceRecord, AttendanceSummary, AttendanceStatus } from '../../types/attendance';
-import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useState, useMemo, useCallback } from "react";
+import type {
+  EnrichedAttendanceRecord,
+  AttendanceSummary,
+  AttendanceStatus,
+} from "../../types/attendance";
+import { attendanceRecords as fallbackAttendanceRecords } from "../../data/attendance/attendance-records";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { classSchedules as fallbackClassSchedules } from "../../data/attendance/schedules";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 function enrichRecord(
   r: (typeof fallbackAttendanceRecords)[number],
@@ -23,25 +27,28 @@ function enrichRecord(
     subjectCode: subject?.code ?? r.subjectId,
     subjectTitle: subject?.title ?? r.subjectId,
     instructorName: instructor?.name ?? r.instructorId,
-    sessionStartTime: schedule?.startTime ?? '--:--',
-    sessionEndTime: schedule?.endTime ?? '--:--',
+    sessionStartTime: schedule?.startTime ?? "--:--",
+    sessionEndTime: schedule?.endTime ?? "--:--",
   };
 }
 
 export interface AttendanceFilters {
   classId: string;
-  status: AttendanceStatus | '';
+  status: AttendanceStatus | "";
   dateFrom: string;
   dateTo: string;
   search: string;
 }
 
-export type SortField = 'date' | 'subject' | 'status' | 'timeIn';
-export type SortDir = 'asc' | 'desc';
+export type SortField = "date" | "subject" | "status" | "timeIn";
+export type SortDir = "asc" | "desc";
 
 export interface UseAttendanceHistoryReturn {
   filters: AttendanceFilters;
-  setFilter: <K extends keyof AttendanceFilters>(key: K, value: AttendanceFilters[K]) => void;
+  setFilter: <K extends keyof AttendanceFilters>(
+    key: K,
+    value: AttendanceFilters[K],
+  ) => void;
   clearFilters: () => void;
   sortField: SortField;
   sortDir: SortDir;
@@ -57,49 +64,57 @@ export interface UseAttendanceHistoryReturn {
 }
 
 const DEFAULT_FILTERS: AttendanceFilters = {
-  classId: '',
-  status: '',
-  dateFrom: '',
-  dateTo: '',
-  search: '',
+  classId: "",
+  status: "",
+  dateFrom: "",
+  dateTo: "",
+  search: "",
 };
 
 const PAGE_SIZE = 15;
 
-export function useAttendanceHistory(studentId: string): UseAttendanceHistoryReturn {
-  const { data: attendanceRecords, loading: attendanceRecordsLoading } = useSupabaseTable({
-    table: 'attendance_records_view',
-    fallback: fallbackAttendanceRecords,
-    orderBy: 'date',
-  });
-  const { data: classOfferings, loading: classOfferingsLoading } = useSupabaseTable({
-    table: 'class_offerings_view',
-    fallback: fallbackClassOfferings,
-    orderBy: 'id',
-  });
-  const { data: classSchedules, loading: classSchedulesLoading } = useSupabaseTable({
-    table: 'class_schedules_view',
-    fallback: fallbackClassSchedules,
-    orderBy: 'id',
-  });
+export function useAttendanceHistory(
+  studentId: string,
+): UseAttendanceHistoryReturn {
+  const { data: attendanceRecords, loading: attendanceRecordsLoading } =
+    useSupabaseTable({
+      table: "attendance_records",
+      fallback: fallbackAttendanceRecords,
+      orderBy: "date",
+    });
+  const { data: classOfferings, loading: classOfferingsLoading } =
+    useSupabaseTable({
+      table: "class_offerings",
+      fallback: fallbackClassOfferings,
+      orderBy: "id",
+    });
+  const { data: classSchedules, loading: classSchedulesLoading } =
+    useSupabaseTable({
+      table: "class_schedules",
+      fallback: fallbackClassSchedules,
+      orderBy: "id",
+    });
   const { data: instructors, loading: instructorsLoading } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
   const { data: subjects, loading: subjectsLoading } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
 
   const [filters, setFilters] = useState<AttendanceFilters>(DEFAULT_FILTERS);
-  const [sortField, setSortField] = useState<SortField>('date');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(1);
 
   const setFilter = useCallback(
-    <K extends keyof AttendanceFilters>(key: K, value: AttendanceFilters[K]) => {
+    <K extends keyof AttendanceFilters>(
+      key: K,
+      value: AttendanceFilters[K],
+    ) => {
       setFilters((prev) => ({ ...prev, [key]: value }));
       setPage(1);
     },
@@ -113,26 +128,48 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
 
   const setSort = useCallback((field: SortField) => {
     setSortField((prev) => {
-      if (prev === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-      else setSortDir('asc');
+      if (prev === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      else setSortDir("asc");
       return field;
     });
     setPage(1);
   }, []);
 
   const enrichedRecords = useMemo(
-    () => attendanceRecords.filter((r) => r.studentId === studentId)
-      .map((r) => enrichRecord(r, classOfferings, classSchedules, instructors, subjects)),
-    [studentId, attendanceRecords, classOfferings, classSchedules, instructors, subjects],
+    () =>
+      attendanceRecords
+        .filter((r) => r.studentId === studentId)
+        .map((r) =>
+          enrichRecord(
+            r,
+            classOfferings,
+            classSchedules,
+            instructors,
+            subjects,
+          ),
+        ),
+    [
+      studentId,
+      attendanceRecords,
+      classOfferings,
+      classSchedules,
+      instructors,
+      subjects,
+    ],
   );
 
   const availableClasses = useMemo(() => {
     const seen = new Set<string>();
-    const result: { id: string; subjectCode: string; subjectTitle: string }[] = [];
+    const result: { id: string; subjectCode: string; subjectTitle: string }[] =
+      [];
     for (const r of enrichedRecords) {
       if (!seen.has(r.classId)) {
         seen.add(r.classId);
-        result.push({ id: r.classId, subjectCode: r.subjectCode, subjectTitle: r.subjectTitle });
+        result.push({
+          id: r.classId,
+          subjectCode: r.subjectCode,
+          subjectTitle: r.subjectTitle,
+        });
       }
     }
     return result.sort((a, b) => a.subjectCode.localeCompare(b.subjectCode));
@@ -141,10 +178,14 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
   const allFiltered = useMemo(() => {
     let records = enrichedRecords;
 
-    if (filters.classId) records = records.filter((r) => r.classId === filters.classId);
-    if (filters.status) records = records.filter((r) => r.status === filters.status);
-    if (filters.dateFrom) records = records.filter((r) => r.date >= filters.dateFrom);
-    if (filters.dateTo) records = records.filter((r) => r.date <= filters.dateTo);
+    if (filters.classId)
+      records = records.filter((r) => r.classId === filters.classId);
+    if (filters.status)
+      records = records.filter((r) => r.status === filters.status);
+    if (filters.dateFrom)
+      records = records.filter((r) => r.date >= filters.dateFrom);
+    if (filters.dateTo)
+      records = records.filter((r) => r.date <= filters.dateTo);
     if (filters.search) {
       const q = filters.search.toLowerCase();
       records = records.filter(
@@ -158,11 +199,12 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
 
     records = [...records].sort((a, b) => {
       let cmp = 0;
-      if (sortField === 'date') cmp = a.date.localeCompare(b.date);
-      else if (sortField === 'subject') cmp = a.subjectCode.localeCompare(b.subjectCode);
-      else if (sortField === 'status') cmp = a.status.localeCompare(b.status);
-      else if (sortField === 'timeIn') cmp = a.timeIn.localeCompare(b.timeIn);
-      return sortDir === 'asc' ? cmp : -cmp;
+      if (sortField === "date") cmp = a.date.localeCompare(b.date);
+      else if (sortField === "subject")
+        cmp = a.subjectCode.localeCompare(b.subjectCode);
+      else if (sortField === "status") cmp = a.status.localeCompare(b.status);
+      else if (sortField === "timeIn") cmp = a.timeIn.localeCompare(b.timeIn);
+      return sortDir === "asc" ? cmp : -cmp;
     });
 
     return records;
@@ -170,11 +212,12 @@ export function useAttendanceHistory(studentId: string): UseAttendanceHistoryRet
 
   const summary = useMemo<AttendanceSummary>(() => {
     const total = allFiltered.length;
-    const present = allFiltered.filter((r) => r.status === 'present').length;
-    const late = allFiltered.filter((r) => r.status === 'late').length;
-    const absent = allFiltered.filter((r) => r.status === 'absent').length;
-    const excused = allFiltered.filter((r) => r.status === 'excused').length;
-    const attendanceRate = total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
+    const present = allFiltered.filter((r) => r.status === "present").length;
+    const late = allFiltered.filter((r) => r.status === "late").length;
+    const absent = allFiltered.filter((r) => r.status === "absent").length;
+    const excused = allFiltered.filter((r) => r.status === "excused").length;
+    const attendanceRate =
+      total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
     return { total, present, late, absent, excused, attendanceRate };
   }, [allFiltered]);
 

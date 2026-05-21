@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { attendanceRecords as fallbackAttendanceRecords } from '../../data/attendance/attendance-records';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { attendanceSessions as fallbackAttendanceSessions } from '../../data/attendance/attendance-sessions';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { gradeStudents as fallbackGradeStudents } from '../../data/grades/grades';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
-import type { AttendanceSummary } from '../../types/attendance';
+import { useMemo } from "react";
+import { attendanceRecords as fallbackAttendanceRecords } from "../../data/attendance/attendance-records";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { attendanceSessions as fallbackAttendanceSessions } from "../../data/attendance/attendance-sessions";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { gradeStudents as fallbackGradeStudents } from "../../data/grades/grades";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
+import type { AttendanceSummary } from "../../types/attendance";
 
 export interface ClassAttendanceReport {
   classId: string;
@@ -40,91 +40,133 @@ export interface OverallReportStats {
   perfectAttendanceStudents: number;
 }
 
-function summarizeForStudent(records: typeof attendanceRecords, studentId: string, classId: string) {
-  const r = records.filter((rec) => rec.studentId === studentId && rec.classId === classId);
+function summarizeForStudent(
+  records: typeof attendanceRecords,
+  studentId: string,
+  classId: string,
+) {
+  const r = records.filter(
+    (rec) => rec.studentId === studentId && rec.classId === classId,
+  );
   const total = r.length;
-  const present = r.filter((rec) => rec.status === 'present').length;
-  const late = r.filter((rec) => rec.status === 'late').length;
-  const absent = r.filter((rec) => rec.status === 'absent').length;
-  const excused = r.filter((rec) => rec.status === 'excused').length;
-  const attendanceRate = total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
-  return { total, present, late, absent, excused, attendanceRate } satisfies AttendanceSummary;
+  const present = r.filter((rec) => rec.status === "present").length;
+  const late = r.filter((rec) => rec.status === "late").length;
+  const absent = r.filter((rec) => rec.status === "absent").length;
+  const excused = r.filter((rec) => rec.status === "excused").length;
+  const attendanceRate =
+    total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
+  return {
+    total,
+    present,
+    late,
+    absent,
+    excused,
+    attendanceRate,
+  } satisfies AttendanceSummary;
 }
 
 export function useAttendanceReports() {
   const { data: attendanceRecords } = useSupabaseTable({
-    table: 'attendance_records_view',
+    table: "attendance_records",
     fallback: fallbackAttendanceRecords,
-    orderBy: 'date',
+    orderBy: "date",
   });
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: attendanceSessions } = useSupabaseTable({
-    table: 'attendance_sessions_view',
+    table: "attendance_sessions",
     fallback: fallbackAttendanceSessions,
-    orderBy: 'date',
+    orderBy: "date",
   });
   const { data: subjects } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
   const { data: instructors } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
   const gradeStudents = fallbackGradeStudents;
 
-  return useMemo<{ classReports: ClassAttendanceReport[]; overall: OverallReportStats }>(() => {
-    const classReports: ClassAttendanceReport[] = classOfferings.map((offering) => {
-      const subject = subjects.find((s) => s.id === offering.subjectId);
-      const instructor = instructors.find((i) => i.id === offering.instructorId);
-      const sessions = attendanceSessions.filter((s) => s.classId === offering.id);
-      const classRecords = attendanceRecords.filter((r) => r.classId === offering.id);
+  return useMemo<{
+    classReports: ClassAttendanceReport[];
+    overall: OverallReportStats;
+  }>(() => {
+    const classReports: ClassAttendanceReport[] = classOfferings.map(
+      (offering) => {
+        const subject = subjects.find((s) => s.id === offering.subjectId);
+        const instructor = instructors.find(
+          (i) => i.id === offering.instructorId,
+        );
+        const sessions = attendanceSessions.filter(
+          (s) => s.classId === offering.id,
+        );
+        const classRecords = attendanceRecords.filter(
+          (r) => r.classId === offering.id,
+        );
 
-      const studentSummaries: StudentClassSummary[] = offering.enrolledStudentIds.map((studentId) => {
-        const student = gradeStudents[studentId];
-        const summary = summarizeForStudent(attendanceRecords, studentId, offering.id);
+        const studentSummaries: StudentClassSummary[] =
+          offering.enrolledStudentIds.map((studentId) => {
+            const student = gradeStudents[studentId];
+            const summary = summarizeForStudent(
+              attendanceRecords,
+              studentId,
+              offering.id,
+            );
+            return {
+              studentId,
+              studentName: student?.name ?? studentId,
+              studentNumber: student?.studentNumber ?? "",
+              summary,
+              isAtRisk: summary.attendanceRate < 75 && summary.total > 0,
+            };
+          });
+
+        const total = classRecords.length;
+        const present = classRecords.filter(
+          (r) => r.status === "present",
+        ).length;
+        const late = classRecords.filter((r) => r.status === "late").length;
+        const absent = classRecords.filter((r) => r.status === "absent").length;
+        const excused = classRecords.filter(
+          (r) => r.status === "excused",
+        ).length;
+        const attendanceRate =
+          total > 0
+            ? Math.round(((present + late + excused) / total) * 100)
+            : 0;
+
         return {
-          studentId,
-          studentName: student?.name ?? studentId,
-          studentNumber: student?.studentNumber ?? '',
-          summary,
-          isAtRisk: summary.attendanceRate < 75 && summary.total > 0,
+          classId: offering.id,
+          subjectCode: subject?.code ?? offering.subjectId,
+          subjectTitle: subject?.title ?? offering.subjectId,
+          sectionCode: offering.sectionCode,
+          room: offering.room,
+          instructorId: offering.instructorId,
+          instructorName: instructor?.name ?? offering.instructorId,
+          enrolledCount: offering.enrolledStudentIds.length,
+          totalSessions: sessions.length,
+          summary: { total, present, late, absent, excused, attendanceRate },
+          studentSummaries,
+          atRiskCount: studentSummaries.filter((s) => s.isAtRisk).length,
         };
-      });
+      },
+    );
 
-      const total = classRecords.length;
-      const present = classRecords.filter((r) => r.status === 'present').length;
-      const late = classRecords.filter((r) => r.status === 'late').length;
-      const absent = classRecords.filter((r) => r.status === 'absent').length;
-      const excused = classRecords.filter((r) => r.status === 'excused').length;
-      const attendanceRate = total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
-
-      return {
-        classId: offering.id,
-        subjectCode: subject?.code ?? offering.subjectId,
-        subjectTitle: subject?.title ?? offering.subjectId,
-        sectionCode: offering.sectionCode,
-        room: offering.room,
-        instructorId: offering.instructorId,
-        instructorName: instructor?.name ?? offering.instructorId,
-        enrolledCount: offering.enrolledStudentIds.length,
-        totalSessions: sessions.length,
-        summary: { total, present, late, absent, excused, attendanceRate },
-        studentSummaries,
-        atRiskCount: studentSummaries.filter((s) => s.isAtRisk).length,
-      };
-    });
-
-    const allStudentIds = [...new Set(classOfferings.flatMap((o) => o.enrolledStudentIds))];
+    const allStudentIds = [
+      ...new Set(classOfferings.flatMap((o) => o.enrolledStudentIds)),
+    ];
     const avgRate =
       classReports.length > 0
-        ? Math.round(classReports.reduce((s, r) => s + r.summary.attendanceRate, 0) / classReports.length)
+        ? Math.round(
+            classReports.reduce((s, r) => s + r.summary.attendanceRate, 0) /
+              classReports.length,
+          )
         : 0;
 
     const atRisk = new Set<string>();
@@ -146,8 +188,16 @@ export function useAttendanceReports() {
     };
 
     return {
-      classReports: classReports.sort((a, b) => a.summary.attendanceRate - b.summary.attendanceRate),
+      classReports: classReports.sort(
+        (a, b) => a.summary.attendanceRate - b.summary.attendanceRate,
+      ),
       overall,
     };
-  }, [attendanceRecords, classOfferings, attendanceSessions, subjects, instructors]);
+  }, [
+    attendanceRecords,
+    classOfferings,
+    attendanceSessions,
+    subjects,
+    instructors,
+  ]);
 }

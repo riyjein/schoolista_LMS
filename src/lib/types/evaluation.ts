@@ -1,12 +1,12 @@
-export type EvalStatus = 'draft' | 'submitted';
-export type QuestionType = 'rating' | 'textarea';
+export type EvalStatus = "draft" | "submitted";
+export type QuestionType = "rating" | "textarea";
 
 export interface EvalCategory {
   id: string;
   label: string;
   description: string;
-  weight: number;  // sum of all weights = 1.0
-  color: string;   // tailwind bg color class
+  weight: number; // sum of all weights = 1.0
+  color: string; // tailwind bg color class
 }
 
 export interface EvalQuestion {
@@ -20,8 +20,8 @@ export interface EvalQuestion {
 
 export interface EvalAnswer {
   questionId: string;
-  rating?: number;   // 1–5 for rating questions
-  comment?: string;  // text for textarea questions
+  rating?: number; // 1–5 for rating questions
+  comment?: string; // text for textarea questions
 }
 
 export interface EvalRecord {

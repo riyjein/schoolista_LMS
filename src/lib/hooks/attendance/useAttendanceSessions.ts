@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import type { AttendanceSession } from '../../types/attendance';
+import { useMemo } from "react";
+import type { AttendanceSession } from "../../types/attendance";
 import {
   attendanceSessions as fallbackAttendanceSessions,
   demoSessions,
@@ -8,8 +8,8 @@ import {
   getSessionsForClass,
   getSessionsForDate,
   getDemoSessionsForDay,
-} from '../../data/attendance/attendance-sessions';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+} from "../../data/attendance/attendance-sessions";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface UseAttendanceSessionsReturn {
   sessions: AttendanceSession[];
@@ -18,15 +18,17 @@ export interface UseAttendanceSessionsReturn {
   getSessionById: (id: string) => AttendanceSession | undefined;
   getSessionsForClass: (classId: string) => AttendanceSession[];
   getSessionsForDate: (date: string) => AttendanceSession[];
-  getDemoSessionsForDay: (day: 'Mon' | 'Tue' | 'Wed') => AttendanceSession[];
+  getDemoSessionsForDay: (day: "Mon" | "Tue" | "Wed") => AttendanceSession[];
   getSessionsInDateRange: (from: string, to: string) => AttendanceSession[];
 }
 
-export function useAttendanceSessions(classId?: string): UseAttendanceSessionsReturn {
+export function useAttendanceSessions(
+  classId?: string,
+): UseAttendanceSessionsReturn {
   const { data: attendanceSessions } = useSupabaseTable({
-    table: 'attendance_sessions_view',
+    table: "attendance_sessions",
     fallback: fallbackAttendanceSessions,
-    orderBy: 'date',
+    orderBy: "date",
   });
 
   const sessions = useMemo(

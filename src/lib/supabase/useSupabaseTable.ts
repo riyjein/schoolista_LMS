@@ -7,6 +7,7 @@ export interface UseSupabaseTableOptions<T> {
   orderBy?: string;
   ascending?: boolean;
   select?: string;
+  useFallbackWhenEmpty?: boolean;
 }
 
 export interface UseSupabaseTableResult<T> {
@@ -44,7 +45,14 @@ function camelizeValue(value: unknown): unknown {
 export function useSupabaseTable<T extends object>(
   options: UseSupabaseTableOptions<T>,
 ): UseSupabaseTableResult<T> {
-  const { table, fallback, orderBy, ascending = true, select = "*" } = options;
+  const {
+    table,
+    fallback,
+    orderBy,
+    ascending = true,
+    select = "*",
+    useFallbackWhenEmpty = true,
+  } = options;
   const [data, setData] = useState<T[]>(fallback);
   const [loading, setLoading] = useState<boolean>(hasSupabaseConfig());
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +76,12 @@ export function useSupabaseTable<T extends object>(
       setError(fetchError.message);
       setData(fallback);
     } else {
-      setData((rows ?? []).map((row) => camelizeValue(row)) as T[]);
+      const normalizedRows = (rows ?? []).map((row) => camelizeValue(row)) as T[];
+      if (useFallbackWhenEmpty && normalizedRows.length === 0 && fallback.length > 0) {
+        setData(fallback);
+      } else {
+        setData(normalizedRows);
+      }
     }
     setLoading(false);
   };

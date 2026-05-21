@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { facultyLoads as fallbackFacultyLoads } from '../../data/grading/faculty-loads';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useMemo } from "react";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { classSchedules as fallbackClassSchedules } from "../../data/attendance/schedules";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { facultyLoads as fallbackFacultyLoads } from "../../data/grading/faculty-loads";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface FacultyScheduleEntry {
   id: string;
@@ -16,29 +16,29 @@ export interface FacultyScheduleEntry {
   endTime: string;
   enrolledCount: number;
   maxStudents: number;
-  status: 'active' | 'upcoming' | 'completed';
+  status: "active" | "upcoming" | "completed";
 }
 
 export const useFacultySchedule = (instructorId: string) => {
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: classSchedules } = useSupabaseTable({
-    table: 'class_schedules_view',
+    table: "class_schedules",
     fallback: fallbackClassSchedules,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: subjects } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
   const { data: facultyLoads } = useSupabaseTable({
-    table: 'faculty_loads',
+    table: "faculty_loads",
     fallback: fallbackFacultyLoads,
-    orderBy: 'id',
+    orderBy: "id",
   });
 
   const schedule = useMemo(() => {
@@ -67,7 +67,7 @@ export const useFacultySchedule = (instructorId: string) => {
           endTime: schedule.endTime,
           enrolledCount: classOffering.enrolledStudentIds.length,
           maxStudents: load.maxStudents,
-          status: 'active',
+          status: "active",
         } as FacultyScheduleEntry;
       })
       .filter((entry): entry is FacultyScheduleEntry => entry !== null);

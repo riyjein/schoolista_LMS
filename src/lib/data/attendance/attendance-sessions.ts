@@ -1,15 +1,15 @@
-import type { AttendanceSession, DayOfWeek } from '../../types/attendance';
-import { classSchedules } from './schedules';
-import { attendanceSettings } from './attendance-settings';
+import type { AttendanceSession, DayOfWeek } from "../../types/attendance";
+import { classSchedules } from "./schedules";
+import { attendanceSettings } from "./attendance-settings";
 
-const DAY_NAMES: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_NAMES: DayOfWeek[] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function addMinutes(time: string, minutes: number): string {
-  const [h, m] = time.split(':').map(Number);
+  const [h, m] = time.split(":").map(Number);
   const total = h * 60 + m + minutes;
   const nh = Math.floor(total / 60) % 24;
   const nm = total % 60;
-  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
 }
 
 function getDayName(date: Date): DayOfWeek {
@@ -18,7 +18,10 @@ function getDayName(date: Date): DayOfWeek {
   return DAY_NAMES[idx];
 }
 
-function generateSessionsForRange(start: string, end: string): AttendanceSession[] {
+function generateSessionsForRange(
+  start: string,
+  end: string,
+): AttendanceSession[] {
   const sessions: AttendanceSession[] = [];
   const startDate = new Date(start);
   const endDate = new Date(end);
@@ -26,24 +29,33 @@ function generateSessionsForRange(start: string, end: string): AttendanceSession
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     const dayName = getDayName(new Date(d));
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = d.toISOString().split("T")[0];
 
     for (const sched of classSchedules) {
       if (!sched.days.includes(dayName)) continue;
 
-      const openTime = addMinutes(sched.startTime, -attendanceSettings.openingBufferMinutes);
-      const closeTime = addMinutes(sched.endTime, attendanceSettings.closingWindowMinutes);
-      const lateAfter = addMinutes(sched.startTime, attendanceSettings.lateThresholdMinutes);
+      const openTime = addMinutes(
+        sched.startTime,
+        -attendanceSettings.openingBufferMinutes,
+      );
+      const closeTime = addMinutes(
+        sched.endTime,
+        attendanceSettings.closingWindowMinutes,
+      );
+      const lateAfter = addMinutes(
+        sched.startTime,
+        attendanceSettings.lateThresholdMinutes,
+      );
 
       sessions.push({
-        id: `session-${String(sessionCounter).padStart(4, '0')}`,
+        id: `session-${String(sessionCounter).padStart(4, "0")}`,
         classId: sched.classId,
         scheduleId: sched.id,
         date: dateStr,
         openTime,
         closeTime,
         lateAfter,
-        status: 'closed', // historical sessions are all closed
+        status: "closed", // historical sessions are all closed
       });
       sessionCounter++;
     }
@@ -52,88 +64,11 @@ function generateSessionsForRange(start: string, end: string): AttendanceSession
 }
 
 // Generate for full 1st semester 2024-2025 (Aug 5 – Oct 25, 2024)
-export const attendanceSessions: AttendanceSession[] = generateSessionsForRange(
-  '2024-08-05',
-  '2024-10-25',
-);
+export const attendanceSessions: AttendanceSession[] = [];
 
 // Simulated "demo sessions" — future dates that map to specific demo days
 // These are the sessions the RFID scanner will use for live simulation
-export const demoSessions: AttendanceSession[] = [
-  // A simulated Monday (all MWF classes)
-  {
-    id: 'demo-session-mon-cs211',
-    classId: 'class-1',
-    scheduleId: 'sched-1',
-    date: '2024-09-16',
-    openTime: '08:50',
-    closeTime: '10:30',
-    lateAfter: '09:15',
-    status: 'open',
-  },
-  {
-    id: 'demo-session-mon-cs231',
-    classId: 'class-3',
-    scheduleId: 'sched-3',
-    date: '2024-09-16',
-    openTime: '10:50',
-    closeTime: '12:30',
-    lateAfter: '11:15',
-    status: 'open',
-  },
-  // A simulated Tuesday (TTh classes)
-  {
-    id: 'demo-session-tue-cs221',
-    classId: 'class-2',
-    scheduleId: 'sched-2',
-    date: '2024-09-17',
-    openTime: '09:50',
-    closeTime: '12:00',
-    lateAfter: '10:15',
-    status: 'open',
-  },
-  {
-    id: 'demo-session-tue-eng211',
-    classId: 'class-5',
-    scheduleId: 'sched-5',
-    date: '2024-09-17',
-    openTime: '12:50',
-    closeTime: '15:00',
-    lateAfter: '13:15',
-    status: 'open',
-  },
-  // A simulated Wednesday (MWF + PE)
-  {
-    id: 'demo-session-wed-cs211',
-    classId: 'class-1',
-    scheduleId: 'sched-1',
-    date: '2024-09-18',
-    openTime: '08:50',
-    closeTime: '10:30',
-    lateAfter: '09:15',
-    status: 'open',
-  },
-  {
-    id: 'demo-session-wed-cs231',
-    classId: 'class-3',
-    scheduleId: 'sched-3',
-    date: '2024-09-18',
-    openTime: '10:50',
-    closeTime: '12:30',
-    lateAfter: '11:15',
-    status: 'open',
-  },
-  {
-    id: 'demo-session-wed-pe201',
-    classId: 'class-4',
-    scheduleId: 'sched-4',
-    date: '2024-09-18',
-    openTime: '13:50',
-    closeTime: '16:30',
-    lateAfter: '14:15',
-    status: 'open',
-  },
-];
+export const demoSessions: AttendanceSession[] = [];
 
 export const getAllSessions = (): AttendanceSession[] => [
   ...attendanceSessions,
@@ -149,7 +84,9 @@ export const getSessionsForClass = (classId: string): AttendanceSession[] =>
 export const getSessionsForDate = (date: string): AttendanceSession[] =>
   getAllSessions().filter((s) => s.date === date);
 
-export const getDemoSessionsForDay = (dayType: 'Mon' | 'Tue' | 'Wed'): AttendanceSession[] => {
-  const dateMap = { Mon: '2024-09-16', Tue: '2024-09-17', Wed: '2024-09-18' };
+export const getDemoSessionsForDay = (
+  dayType: "Mon" | "Tue" | "Wed",
+): AttendanceSession[] => {
+  const dateMap = { Mon: "2024-09-16", Tue: "2024-09-17", Wed: "2024-09-18" };
   return demoSessions.filter((s) => s.date === dateMap[dayType]);
 };

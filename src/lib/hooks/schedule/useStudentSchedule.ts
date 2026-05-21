@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { classSchedules as fallbackClassSchedules } from '../../data/attendance/schedules';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { enrollmentHistory as fallbackEnrollmentHistory } from '../../data/enrollment/enrollment-history';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useMemo } from "react";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { classSchedules as fallbackClassSchedules } from "../../data/attendance/schedules";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { enrollmentHistory as fallbackEnrollmentHistory } from "../../data/enrollment/enrollment-history";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 export interface StudentScheduleEntry {
   id: string;
@@ -17,40 +17,40 @@ export interface StudentScheduleEntry {
   startTime: string;
   endTime: string;
   units: number;
-  status: 'enrolled' | 'active';
+  status: "enrolled" | "active";
 }
 
 export const useStudentSchedule = (studentId: string) => {
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: classSchedules } = useSupabaseTable({
-    table: 'class_schedules_view',
+    table: "class_schedules",
     fallback: fallbackClassSchedules,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: subjects } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
   const { data: instructors } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
   const { data: enrollmentHistory } = useSupabaseTable({
-    table: 'enrollment_records_view',
+    table: "enrollment_records",
     fallback: fallbackEnrollmentHistory,
-    orderBy: 'submitted_at',
+    orderBy: "submitted_at",
   });
 
   const schedule = useMemo(() => {
     // Get current enrollment for this student
     const currentEnrollment = enrollmentHistory.find(
-      (e) => e.studentId === studentId && e.status === 'approved',
+      (e) => e.studentId === studentId && e.status === "approved",
     );
 
     if (!currentEnrollment) {
@@ -68,8 +68,12 @@ export const useStudentSchedule = (studentId: string) => {
     const scheduleEntries: StudentScheduleEntry[] = studentClasses
       .map((classOffering) => {
         const subject = subjects.find((s) => s.id === classOffering.subjectId);
-        const instructor = instructors.find((i) => i.id === classOffering.instructorId);
-        const schedule = classSchedules.find((s) => s.classId === classOffering.id);
+        const instructor = instructors.find(
+          (i) => i.id === classOffering.instructorId,
+        );
+        const schedule = classSchedules.find(
+          (s) => s.classId === classOffering.id,
+        );
 
         if (!subject || !instructor || !schedule) {
           return null;
@@ -86,13 +90,22 @@ export const useStudentSchedule = (studentId: string) => {
           startTime: schedule.startTime,
           endTime: schedule.endTime,
           units: subject.units,
-          status: enrolledSubjectIds.includes(subject.id) ? 'enrolled' : 'active',
+          status: enrolledSubjectIds.includes(subject.id)
+            ? "enrolled"
+            : "active",
         } as StudentScheduleEntry;
       })
       .filter((entry): entry is StudentScheduleEntry => entry !== null);
 
     return scheduleEntries;
-  }, [studentId, classOfferings, classSchedules, subjects, instructors, enrollmentHistory]);
+  }, [
+    studentId,
+    classOfferings,
+    classSchedules,
+    subjects,
+    instructors,
+    enrollmentHistory,
+  ]);
 
   return {
     schedule,

@@ -1,58 +1,66 @@
-import { useMemo } from 'react';
-import type { CategoryScore, ClassStat, InstructorSummary } from '../../types/evaluation';
-import { evalCategories as fallbackEvalCategories } from '../../data/evaluation/eval-settings';
-import { evalQuestions as fallbackEvalQuestions } from '../../data/evaluation/eval-questions';
-import { evalRecords as fallbackEvalRecords } from '../../data/evaluation/eval-records';
-import { classOfferings as fallbackClassOfferings } from '../../data/attendance/class-offerings';
-import { subjects as fallbackSubjects } from '../../data/enrollment/subjects';
-import { instructors as fallbackInstructors } from '../../data/attendance/instructors';
-import { useSupabaseTable } from '../../supabase/useSupabaseTable';
+import { useMemo } from "react";
+import type {
+  CategoryScore,
+  ClassStat,
+  InstructorSummary,
+} from "../../types/evaluation";
+import { evalCategories as fallbackEvalCategories } from "../../data/evaluation/eval-settings";
+import { evalQuestions as fallbackEvalQuestions } from "../../data/evaluation/eval-questions";
+import { evalRecords as fallbackEvalRecords } from "../../data/evaluation/eval-records";
+import { classOfferings as fallbackClassOfferings } from "../../data/attendance/class-offerings";
+import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
+import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
+import { useSupabaseTable } from "../../supabase/useSupabaseTable";
 
 function avg(nums: number[]): number | null {
   if (nums.length === 0) return null;
-  return Math.round((nums.reduce((s, n) => s + n, 0) / nums.length) * 100) / 100;
+  return (
+    Math.round((nums.reduce((s, n) => s + n, 0) / nums.length) * 100) / 100
+  );
 }
 
 export function useFacultyRatings(instructorId: string): InstructorSummary {
   const { data: evalRecords } = useSupabaseTable({
-    table: 'evaluation_records_view',
+    table: "evaluation_records",
     fallback: fallbackEvalRecords,
-    orderBy: 'submitted_at',
+    orderBy: "submitted_at",
   });
   const { data: evalCategories } = useSupabaseTable({
-    table: 'evaluation_categories',
+    table: "evaluation_categories",
     fallback: fallbackEvalCategories,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: evalQuestions } = useSupabaseTable({
-    table: 'evaluation_questions',
+    table: "evaluation_questions",
     fallback: fallbackEvalQuestions,
-    orderBy: 'sort_order',
+    orderBy: "sort_order",
   });
   const { data: classOfferings } = useSupabaseTable({
-    table: 'class_offerings_view',
+    table: "class_offerings",
     fallback: fallbackClassOfferings,
-    orderBy: 'id',
+    orderBy: "id",
   });
   const { data: subjects } = useSupabaseTable({
-    table: 'subjects',
+    table: "subjects",
     fallback: fallbackSubjects,
-    orderBy: 'code',
+    orderBy: "code",
   });
   const { data: instructors } = useSupabaseTable({
-    table: 'instructors',
+    table: "instructors",
     fallback: fallbackInstructors,
-    orderBy: 'name',
+    orderBy: "name",
   });
 
   return useMemo(() => {
-    const evals = evalRecords.filter((r) => r.instructorId === instructorId && r.status === 'submitted');
+    const evals = evalRecords.filter(
+      (r) => r.instructorId === instructorId && r.status === "submitted",
+    );
     const instructor = instructors.find((i) => i.id === instructorId);
 
     // Category scores
     const categoryScores: CategoryScore[] = evalCategories.map((cat) => {
       const catQuestions = evalQuestions.filter(
-        (q) => q.categoryId === cat.id && q.type === 'rating',
+        (q) => q.categoryId === cat.id && q.type === "rating",
       );
       const ratings: number[] = [];
 
@@ -82,9 +90,10 @@ export function useFacultyRatings(instructorId: string): InstructorSummary {
         totalWeight += cs.weight;
       }
     }
-    const overallRating = totalWeight > 0
-      ? Math.round((weightedSum / totalWeight) * 100) / 100
-      : null;
+    const overallRating =
+      totalWeight > 0
+        ? Math.round((weightedSum / totalWeight) * 100) / 100
+        : null;
 
     // Per-class stats
     const byClass = new Map<string, typeof evals>();
@@ -93,32 +102,44 @@ export function useFacultyRatings(instructorId: string): InstructorSummary {
       byClass.get(ev.classId)!.push(ev);
     }
 
-    const classStats: ClassStat[] = Array.from(byClass.entries()).map(([classId, classEvals]) => {
-      const offering = classOfferings.find((o) => o.id === classId);
-      const subject = subjects.find((s) => s.id === offering?.subjectId);
+    const classStats: ClassStat[] = Array.from(byClass.entries()).map(
+      ([classId, classEvals]) => {
+        const offering = classOfferings.find((o) => o.id === classId);
+        const subject = subjects.find((s) => s.id === offering?.subjectId);
 
-      const allRatings: number[] = classEvals.flatMap((ev) =>
-        ev.answers.filter((a) => a.rating !== undefined).map((a) => a.rating!),
-      );
+        const allRatings: number[] = classEvals.flatMap((ev) =>
+          ev.answers
+            .filter((a) => a.rating !== undefined)
+            .map((a) => a.rating!),
+        );
 
-      return {
-        classId,
-        subjectCode: subject?.code ?? classId,
-        subjectTitle: subject?.title ?? classId,
-        sectionCode: offering?.sectionCode ?? '',
-        evaluationCount: classEvals.length,
-        averageRating: avg(allRatings),
-      };
-    });
+        return {
+          classId,
+          subjectCode: subject?.code ?? classId,
+          subjectTitle: subject?.title ?? classId,
+          sectionCode: offering?.sectionCode ?? "",
+          evaluationCount: classEvals.length,
+          averageRating: avg(allRatings),
+        };
+      },
+    );
 
     return {
       instructorId,
       instructorName: instructor?.name ?? instructorId,
-      department: instructor?.department ?? '',
+      department: instructor?.department ?? "",
       totalEvaluations: evals.length,
       overallRating,
       categoryScores,
       classStats,
     };
-  }, [instructorId, evalRecords, evalCategories, evalQuestions, classOfferings, subjects, instructors]);
+  }, [
+    instructorId,
+    evalRecords,
+    evalCategories,
+    evalQuestions,
+    classOfferings,
+    subjects,
+    instructors,
+  ]);
 }

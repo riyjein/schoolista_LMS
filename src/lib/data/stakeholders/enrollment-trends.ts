@@ -49,6 +49,17 @@ export interface EnrollmentTrends {
   averageRetentionRate: number;
 }
 
+const EMPTY_ENROLLMENT_PERIOD: EnrollmentPeriod = {
+  semester: '1st',
+  schoolYear: '2024-2025',
+  totalEnrolled: 0,
+  newEnrollments: 0,
+  reEnrollments: 0,
+  growthRate: 0,
+  dropoutCount: 0,
+  retentionRate: 0,
+};
+
 // ─── Compute Enrollment Periods ───────────────────────────────────────────────
 
 function computeEnrollmentPeriods(): EnrollmentPeriod[] {
@@ -273,7 +284,7 @@ function computeSubjectDemand(): SubjectDemand[] {
 
 function generateEnrollmentTrends(): EnrollmentTrends {
   const periods = computeEnrollmentPeriods();
-  const currentPeriod = periods[periods.length - 1];
+  const currentPeriod = periods[periods.length - 1] ?? EMPTY_ENROLLMENT_PERIOD;
 
   const totalDropouts = periods.reduce((sum, p) => sum + p.dropoutCount, 0);
   const averageRetentionRate =
@@ -282,7 +293,7 @@ function generateEnrollmentTrends(): EnrollmentTrends {
       : 0;
 
   const overallGrowthRate =
-    periods.length > 1
+    periods.length > 1 && periods[0].totalEnrolled > 0
       ? ((currentPeriod.totalEnrolled - periods[0].totalEnrolled) / periods[0].totalEnrolled) *
         100
       : 0;
