@@ -25,10 +25,15 @@ export interface UseAdminSubjectsResult {
 function computeSubjectStatistics(subjects: Subject[]): SubjectStatistics {
   return {
     totalSubjects: subjects.length,
-    majorSubjects: subjects.filter((subject) => subject.type === "major").length,
-    minorSubjects: subjects.filter((subject) => subject.type === "minor").length,
-    generalEducationSubjects: subjects.filter((subject) => subject.type === "GE").length,
-    electiveSubjects: subjects.filter((subject) => subject.type === "elective").length,
+    majorSubjects: subjects.filter((subject) => subject.type === "major")
+      .length,
+    minorSubjects: subjects.filter((subject) => subject.type === "minor")
+      .length,
+    generalEducationSubjects: subjects.filter(
+      (subject) => subject.type === "GE",
+    ).length,
+    electiveSubjects: subjects.filter((subject) => subject.type === "elective")
+      .length,
   };
 }
 
@@ -44,7 +49,10 @@ export function useAdminSubjects(): UseAdminSubjectsResult {
     [table.data],
   );
 
-  const statistics = useMemo(() => computeSubjectStatistics(table.data), [table.data]);
+  const statistics = useMemo(
+    () => computeSubjectStatistics(table.data),
+    [table.data],
+  );
 
   return {
     subjects: table.data,

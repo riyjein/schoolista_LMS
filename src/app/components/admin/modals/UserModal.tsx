@@ -54,7 +54,10 @@ const emptyState: UserFormState = {
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "").join("");
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function toFormState(user?: User | null): UserFormState {
@@ -106,7 +109,8 @@ export default function UserModal({
         employeeId: form.employeeId.trim() || undefined,
         courseId: form.courseId.trim() || undefined,
         yearLevel: form.yearLevel ? Number(form.yearLevel) : undefined,
-        createdAt: initialUser?.createdAt ?? new Date().toISOString().slice(0, 10),
+        createdAt:
+          initialUser?.createdAt ?? new Date().toISOString().slice(0, 10),
         lastLogin: initialUser?.lastLogin ?? null,
       };
 
@@ -121,7 +125,9 @@ export default function UserModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add User" : "Edit User"}</DialogTitle>
+          <DialogTitle>
+            {mode === "create" ? "Add User" : "Edit User"}
+          </DialogTitle>
           <DialogDescription>
             {mode === "create"
               ? "Create a new system account and assign its role."
@@ -133,7 +139,12 @@ export default function UserModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="user-name">Name</Label>
-              <Input id="user-name" value={form.name} onChange={handleChange("name")} required />
+              <Input
+                id="user-name"
+                value={form.name}
+                onChange={handleChange("name")}
+                required
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="user-email">Email</Label>
@@ -152,7 +163,12 @@ export default function UserModal({
               <Label>Role</Label>
               <Select
                 value={form.role}
-                onValueChange={(value) => setForm((current) => ({ ...current, role: value as UserRole }))}
+                onValueChange={(value) =>
+                  setForm((current) => ({
+                    ...current,
+                    role: value as UserRole,
+                  }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
@@ -171,7 +187,10 @@ export default function UserModal({
               <Select
                 value={form.status}
                 onValueChange={(value) =>
-                  setForm((current) => ({ ...current, status: value as UserStatus }))
+                  setForm((current) => ({
+                    ...current,
+                    status: value as UserStatus,
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -241,11 +260,19 @@ export default function UserModal({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : mode === "create" ? "Create User" : "Save Changes"}
+              {saving
+                ? "Saving..."
+                : mode === "create"
+                  ? "Create User"
+                  : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>
