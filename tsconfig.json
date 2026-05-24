@@ -41,6 +41,9 @@
     "PL_TurtleScript",
     "Schoolista_latest",
     "schoolista",
+    "src",
+    "supabase",
+    "vite.config.ts",
     "Al_Ambulance_Route_Optimizer_repo",
     "Al_Ambulance_Route_Optimizer_upload",
     "video-output"
