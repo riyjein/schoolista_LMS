@@ -6,6 +6,7 @@ import {
   Bell,
   BookOpen,
   Calendar,
+  CheckCircle2,
   ChevronLeft,
   Download,
   Edit3,
@@ -100,6 +101,7 @@ export default function GradingSystemPage() {
   const [gradeRecords, setGradeRecords] = useState<GradeRecord[]>([]);
   const [selectedClassId, setSelectedClassId] = useState("");
   const [selectedInstructorId, setSelectedInstructorId] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export default function GradingSystemPage() {
       setGradeRecords(data.grades ?? []);
       setSelectedInstructorId((current) => current || data.instructors?.[0]?.id || data.classes?.[0]?.instructor_id || "");
       setSelectedClassId((current) => current || data.classes?.[0]?.id || "");
+      setSelectedStudentId((current) => current || data.students?.find((student: StudentProfile) => student.id === "u7")?.id || data.students?.[0]?.id || "");
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Failed to load grading data.");
     } finally {
@@ -198,6 +201,57 @@ export default function GradingSystemPage() {
     };
   }, [rows]);
 
+  const studentGradeRows = useMemo(() => {
+    return gradeRecords
+      .filter((record) => record.student_id === selectedStudentId && record.status === "finalized")
+      .map((record) => {
+        const classInfo = classes.find((item) => item.id === record.class_id);
+        const subject = subjects.find((item) => item.id === classInfo?.subject_id);
+        const row: GradeRow = {
+          studentId: record.student_id,
+          studentNo: "",
+          name: subject?.title ?? classInfo?.section_code ?? record.class_id,
+          prelimGrade: record.prelim_grade ?? "",
+          midtermGrade: record.midterm_grade ?? "",
+          finalGrade: record.final_grade ?? "",
+          status: record.status,
+        };
+
+        return {
+          ...row,
+          classId: record.class_id,
+          subjectCode: subject?.code ?? record.class_id,
+          subjectTitle: subject?.title ?? "Class Grade",
+          sectionCode: classInfo?.section_code ?? "",
+          overall: finalGrade(row),
+        };
+      });
+  }, [classes, gradeRecords, selectedStudentId, subjects]);
+
+  const studentAverage = useMemo(() => {
+    const grades = studentGradeRows
+      .map((row) => row.overall)
+      .filter((grade): grade is number => grade !== null);
+
+    return grades.length ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length : 0;
+  }, [studentGradeRows]);
+
+  const studentGpa = useMemo(() => {
+    if (!studentAverage) return 0;
+    if (studentAverage >= 97) return 1.0;
+    if (studentAverage >= 94) return 1.25;
+    if (studentAverage >= 91) return 1.5;
+    if (studentAverage >= 88) return 1.75;
+    if (studentAverage >= 85) return 2.0;
+    if (studentAverage >= 82) return 2.25;
+    if (studentAverage >= 79) return 2.5;
+    if (studentAverage >= 76) return 2.75;
+    if (studentAverage >= 75) return 3.0;
+    return 5.0;
+  }, [studentAverage]);
+
+  const selectedStudent = students.find((student) => student.id === selectedStudentId);
+
   function updateLocal(studentId: string, key: GradeKey, value: string) {
     const numeric = value === "" ? null : Math.max(0, Math.min(100, Number(value)));
     setGradeRecords((current) => {
@@ -269,6 +323,134 @@ export default function GradingSystemPage() {
     }
   }
 
+  if (actorRole === "student") {
+    return (
+      <main className="min-h-screen bg-[#f6f7f9] px-6 py-10 text-[#001b3f]">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-7 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">My Grades</h1>
+              <p className="mt-2 text-slate-600">
+                View your finalized grades and performance across all subjects
+              </p>
+              <p className="mt-1 text-sm font-medium text-slate-500">
+                {selectedStudent?.name ?? "Student"} · {selectedStudent?.student_number ?? ""}
+              </p>
+            </div>
+            <select
+              value={actorRole}
+              onChange={(event) => setActorRole(event.target.value as ActorRole)}
+              className="h-9 w-fit rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold shadow-sm"
+            >
+              <option value="teacher">Teacher</option>
+              <option value="admin">Admin</option>
+              <option value="student">Student</option>
+            </select>
+          </div>
+
+          <section className="mb-6 rounded-lg border border-[#ffc400] bg-[#2449c9] p-6 text-white shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-white/75">Overall GPA</p>
+                <p className="mt-3 text-6xl font-light text-[#ffc400]">
+                  {studentGpa ? studentGpa.toFixed(2) : "-"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-white/75">Overall Average</p>
+                <p className="mt-3 text-4xl font-light text-emerald-300">
+                  {studentAverage ? `${studentAverage.toFixed(1)}%` : "-"}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="mb-6 rounded-lg border border-slate-200 bg-white p-6 shadow-md shadow-slate-200/70">
+            <h2 className="font-bold">Grade Breakdown</h2>
+            <p className="mt-2 text-slate-600">Detailed view of your finalized grades</p>
+
+            <div className="mt-7 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-600">
+                    <th className="px-2 py-3 text-left font-semibold">Subject</th>
+                    <th className="px-2 py-3 text-center font-semibold">Prelim</th>
+                    <th className="px-2 py-3 text-center font-semibold">Midterm</th>
+                    <th className="px-2 py-3 text-center font-semibold">Final</th>
+                    <th className="px-2 py-3 text-center font-semibold">Overall</th>
+                    <th className="px-2 py-3 text-center font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentGradeRows.map((row) => (
+                    <tr key={row.classId} className="border-b border-slate-100">
+                      <td className="px-2 py-3 font-bold">
+                        {row.subjectCode}
+                        <div className="text-xs font-medium text-slate-500">{row.subjectTitle}</div>
+                      </td>
+                      <td className="px-2 py-3 text-center">{row.prelimGrade}</td>
+                      <td className="px-2 py-3 text-center">{row.midtermGrade}</td>
+                      <td className="px-2 py-3 text-center">{row.finalGrade}</td>
+                      <td className="px-2 py-3 text-center font-bold text-[#ffc400]">
+                        {row.overall?.toFixed(1) ?? "-"}
+                      </td>
+                      <td className="px-2 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500 px-3 py-1 text-xs font-bold text-white">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Finalized
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                  {!studentGradeRows.length && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-12 text-center text-slate-500">
+                        No finalized grades are available for your account yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-2">
+            {studentGradeRows.map((row) => (
+              <article key={row.classId} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-bold">{row.subjectCode}</h3>
+                <p className="mt-2 text-slate-600">Grade Details</p>
+                <div className="mt-6 space-y-4">
+                  {[
+                    ["Prelim (30%)", row.prelimGrade],
+                    ["Midterm (30%)", row.midtermGrade],
+                    ["Final (40%)", row.finalGrade],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-slate-600">{label}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="h-2 w-28 overflow-hidden rounded-full bg-slate-700">
+                          <div
+                            className="h-full rounded-full bg-[#ffc400]"
+                            style={{ width: `${typeof value === "number" ? value : 0}%` }}
+                          />
+                        </div>
+                        <span className="w-10 text-right font-bold">{value}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-5">
+                  <span className="font-bold">Overall Grade</span>
+                  <span className="text-2xl font-bold text-[#ffc400]">{row.overall?.toFixed(1) ?? "-"}</span>
+                </div>
+              </article>
+            ))}
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#f6f7f9] text-[#001b3f]">
       <div className="grid min-h-screen grid-cols-[254px_minmax(0,1fr)]">
@@ -330,9 +512,7 @@ export default function GradingSystemPage() {
                 </span>
               </div>
               <div className="text-right text-sm">
-                <div className="font-bold">
-                  {actorRole === "student" ? "Student View" : selectedInstructor?.name ?? "Professor"}
-                </div>
+                <div className="font-bold">{selectedInstructor?.name ?? "Professor"}</div>
                 <div className="text-xs capitalize text-slate-500">{actorRole}</div>
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ffc400] text-sm font-bold">
@@ -424,8 +604,6 @@ export default function GradingSystemPage() {
                     "Teacher mode: edit grades, save drafts, then request submission."}
                   {actorRole === "admin" &&
                     "Admin mode: review submitted grades and finalize accepted records."}
-                  {actorRole === "student" &&
-                    "Student mode: grades are read-only."}
                 </p>
               </div>
 
@@ -539,9 +717,6 @@ export default function GradingSystemPage() {
                                       Accept
                                     </button>
                                   </>
-                                )}
-                                {actorRole === "student" && (
-                                  <span className="text-xs font-semibold text-slate-500">View only</span>
                                 )}
                                 {actorRole === "teacher" && locked && (
                                   <span className="text-xs font-semibold text-slate-500">Finalized</span>
