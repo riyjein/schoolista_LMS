@@ -1,18 +1,20 @@
-import { useState } from 'react';
-import { useGradeTable } from '@/lib/hooks/grades/useGradeTable';
-import { useGPAComputation } from '@/lib/hooks/grades/useGPAComputation';
-import { useDLQualification } from '@/lib/hooks/grades/useDLQualification';
+import { useState, type ChangeEvent } from 'react';
+
 import { GPASummaryCard } from '../components/GPASummaryCard';
 import { DLBadge } from '../components/DLBadge';
 import { GradeStatusBadge } from '../components/GradeStatusBadge';
 import { RemarksBadge } from '../components/RemarksBadge';
-import type { EnrichedGradeRecord } from '@/lib/types/grades';
-import { cn } from '@/app/components/ui/utils';
-import { Input } from '@/app/components/ui/input';
-import { Button } from '@/app/components/ui/button';
-import { ChevronUp, ChevronDown, Search, X, BookOpen, Clock } from 'lucide-react';
-import { completedSubjectRecords } from '@/lib/data/enrollment/completed-subjects';
-import { subjects } from '@/lib/data/enrollment/subjects';
+import { Button } from '../../ui/button';
+import { Input } from '../../ui/input';
+import { BookOpen, Clock, Search, X } from 'lucide-react';
+import { subjects } from '../../../../lib/data/enrollment/subjects';
+import { completedSubjectRecords } from '../../../../lib/data/enrollment/completed-subjects';
+import { useGradeTable } from '../../../../lib/hooks/grades/useGradeTable';
+import { useGPAComputation } from '../../../../lib/hooks/grades/useGPAComputation';
+import { useDLQualification } from '../../../../lib/hooks/grades/useDLQualification';
+import { EnrichedGradeRecord } from '../../../../lib/types/grades';
+import { cn } from '../../../../lib/utils';
+
 
 // Demo: Maria Santos (student-1)
 const STUDENT_ID = 'student-1';
@@ -123,12 +125,12 @@ export default function StudentGradesPage() {
                   placeholder="Search subject or instructor…"
                   className="pl-9"
                   value={table.filters.search}
-                  onChange={(e) => table.setFilter('search', e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => table.setFilter('search', e.target.value)}
                 />
               </div>
               <select
                 value={table.filters.status}
-                onChange={(e) => table.setFilter('status', e.target.value as any)}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => table.setFilter('status', e.target.value as any)}
                 className="rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Statuses</option>
@@ -138,7 +140,7 @@ export default function StudentGradesPage() {
               </select>
               <select
                 value={table.filters.remarks}
-                onChange={(e) => table.setFilter('remarks', e.target.value as any)}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => table.setFilter('remarks', e.target.value as any)}
                 className="rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">All Remarks</option>

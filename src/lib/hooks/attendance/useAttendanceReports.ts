@@ -6,7 +6,7 @@ import { subjects as fallbackSubjects } from "../../data/enrollment/subjects";
 import { instructors as fallbackInstructors } from "../../data/attendance/instructors";
 import { gradeStudents as fallbackGradeStudents } from "../../data/grades/grades";
 import { useSupabaseTable } from "../../supabase/useSupabaseTable";
-import type { AttendanceSummary } from "../../types/attendance";
+import type { AttendanceSummary, AttendanceRecord } from "../../types/attendance";
 
 export interface ClassAttendanceReport {
   classId: string;
@@ -41,18 +41,18 @@ export interface OverallReportStats {
 }
 
 function summarizeForStudent(
-  records: typeof attendanceRecords,
+  records: AttendanceRecord[],
   studentId: string,
   classId: string,
 ) {
   const r = records.filter(
-    (rec) => rec.studentId === studentId && rec.classId === classId,
+    (rec: AttendanceRecord) => rec.studentId === studentId && rec.classId === classId,
   );
   const total = r.length;
-  const present = r.filter((rec) => rec.status === "present").length;
-  const late = r.filter((rec) => rec.status === "late").length;
-  const absent = r.filter((rec) => rec.status === "absent").length;
-  const excused = r.filter((rec) => rec.status === "excused").length;
+  const present = r.filter((rec: AttendanceRecord) => rec.status === "present").length;
+  const late = r.filter((rec: AttendanceRecord) => rec.status === "late").length;
+  const absent = r.filter((rec: AttendanceRecord) => rec.status === "absent").length;
+  const excused = r.filter((rec: AttendanceRecord) => rec.status === "excused").length;
   const attendanceRate =
     total > 0 ? Math.round(((present + late + excused) / total) * 100) : 0;
   return {

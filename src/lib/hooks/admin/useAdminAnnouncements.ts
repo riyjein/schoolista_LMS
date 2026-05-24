@@ -27,7 +27,7 @@ export function useAdminAnnouncements(): UseAdminAnnouncementsResult {
     ascending: false,
   });
 
-  const statistics = useMemo(() => computeAnnouncementStatistics(table.data), [table.data]);
+  const statistics = useMemo(() => computeAnnouncementStatistics(), []);
 
   return {
     announcements: table.data,

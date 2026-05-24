@@ -61,6 +61,7 @@ export interface UseAttendanceHistoryReturn {
   paginated: EnrichedAttendanceRecord[];
   summary: AttendanceSummary;
   availableClasses: { id: string; subjectCode: string; subjectTitle: string }[];
+  isLoading: boolean;
 }
 
 const DEFAULT_FILTERS: AttendanceFilters = {

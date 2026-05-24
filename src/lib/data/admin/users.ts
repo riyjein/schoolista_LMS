@@ -14,7 +14,7 @@ export interface User {
   email: string;
   role: UserRole;
   status: UserStatus;
-  avatarInitials?: string;
+  avatarInitials: string;
   createdAt: string;
   lastLogin: string | null;
   // Role-specific identifiers
@@ -47,19 +47,21 @@ function generateUsers(): User[] {
     const enrollments = enrollmentHistory.filter((e) => e.studentId === student.id);
     const lastEnrollment = enrollments.length > 0
       ? enrollments.sort((a, b) => {
-          if (!a.enrollmentDate || !b.enrollmentDate) return 0;
-          return b.enrollmentDate.localeCompare(a.enrollmentDate);
+          if (!a.submittedAt || !b.submittedAt) return 0;
+          return b.submittedAt.localeCompare(a.submittedAt);
         })[0]
       : null;
 
+    const initials = student.name.split(' ').map((n) => n[0]).join('').slice(0,2).toUpperCase();
     users.push({
       id: student.userId,
       name: student.name,
       email: `${student.studentNumber.toLowerCase().replace('-', '')}@university.edu`,
       role: 'student',
-      status: student.status === 'dropped' ? 'inactive' : 'active',
+      status: student.status === 'graduated' ? 'inactive' : 'active',
+      avatarInitials: initials,
       createdAt: '2023-06-15',
-      lastLogin: lastEnrollment ? lastEnrollment.enrollmentDate : '2024-08-20',
+      lastLogin: lastEnrollment ? lastEnrollment.submittedAt : '2024-08-20',
       studentNumber: student.studentNumber,
       department: undefined,
       program: student.courseId,
@@ -72,12 +74,14 @@ function generateUsers(): User[] {
   instructors.forEach((instructor) => {
     const loads = facultyLoads.filter((l) => l.instructorId === instructor.id);
 
+    const initials = instructor.name.split(' ').map((n) => n[0]).join('').slice(0,2).toUpperCase();
     users.push({
       id: instructor.userId,
       name: instructor.name,
       email: `${instructor.employeeId.toLowerCase().replace('-', '')}@university.edu`,
       role: 'faculty',
       status: 'active',
+      avatarInitials: initials,
       createdAt: '2020-01-15',
       lastLogin: loads.length > 0 ? '2024-11-18' : '2024-10-15',
       employeeId: instructor.employeeId,
@@ -93,6 +97,7 @@ function generateUsers(): User[] {
     email: 'rmendez@university.edu',
     role: 'program-chair',
     status: 'active',
+    avatarInitials: 'RM',
     createdAt: '2019-03-01',
     lastLogin: '2024-11-19',
     employeeId: 'EMP-004',
@@ -106,6 +111,7 @@ function generateUsers(): User[] {
     email: 'mcsantos@university.edu',
     role: 'stakeholder',
     status: 'active',
+    avatarInitials: 'MC',
     createdAt: '2018-07-12',
     lastLogin: '2024-11-19',
     employeeId: 'EMP-005',
@@ -119,6 +125,7 @@ function generateUsers(): User[] {
     email: 'admin@university.edu',
     role: 'admin',
     status: 'active',
+    avatarInitials: 'SA',
     createdAt: '2018-01-01',
     lastLogin: '2024-11-19',
     employeeId: 'ADMIN-001',

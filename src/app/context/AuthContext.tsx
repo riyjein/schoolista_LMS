@@ -16,7 +16,8 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Default to authenticated for local development/demo so dashboards render
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   const switchRole = (role: UserRole) => {
     setCurrentUser(getMockUserByRole(role));

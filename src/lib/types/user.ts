@@ -5,7 +5,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  avatar_initials: string;
+  avatarInitials: string;
   department?: string;
   studentId?: string;
   employeeId?: string;

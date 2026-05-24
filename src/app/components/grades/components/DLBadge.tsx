@@ -1,8 +1,8 @@
-import type { DLQualification, DLBadge } from '@/lib/types/grades';
-import { cn } from '@/app/components/ui/utils';
 import { Award, AlertCircle } from 'lucide-react';
+import { DLQualification } from '../../../../lib/types/grades';
+import { cn } from '../../../../lib/utils';
 
-const BADGE_CONFIG: Record<Exclude<DLBadge, 'none'>, { label: string; className: string }> = {
+const BADGE_CONFIG: Record<Exclude<DLQualification['badge'], 'none'>, { label: string; className: string }> = {
   summa:      { label: "Summa Cum Laude",  className: 'bg-yellow-50 border-yellow-400 text-yellow-800' },
   magna:      { label: "Magna Cum Laude",  className: 'bg-blue-50 border-blue-400 text-blue-800' },
   'cum-laude':{ label: "Cum Laude",        className: 'bg-green-50 border-green-400 text-green-800' },
@@ -12,7 +12,7 @@ interface Props {
   qualification: DLQualification;
   showDisqualifiers?: boolean;
 }
-
+  
 export function DLBadge({ qualification, showDisqualifiers = false }: Props) {
   if (qualification.qualified && qualification.badge !== 'none') {
     const { label, className } = BADGE_CONFIG[qualification.badge];

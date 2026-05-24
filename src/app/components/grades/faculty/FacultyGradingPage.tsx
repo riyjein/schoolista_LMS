@@ -121,7 +121,8 @@ function RowActions({ row, onSave, onSubmit, onFinalize }: RowActionsProps) {
 }
 
 export default function FacultyGradingPage() {
-  const [instructorId, setInstructorId] = useState('inst-2');
+  const [instructorId, setInstructorId] = useState('u2');
+
 
   const encoding = useFacultyGradeEncoding(instructorId);
 

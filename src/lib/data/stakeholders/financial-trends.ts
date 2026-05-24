@@ -275,7 +275,7 @@ export const financialTrends: FinancialTrends = generateFinancialTrends();
 
 // ─── Helper Functions ─────────────────────────────────────────────────────────
 
-export const getPeriodData = (schoolYear: string, semester: string): FinancialPeriod | undefined =>
+export const getFinancialPeriodData = (schoolYear: string, semester: string): FinancialPeriod | undefined =>
   financialTrends.periods.find((p) => p.schoolYear === schoolYear && p.semester === semester);
 
 export const getCourseRevenue = (courseId: string): RevenueBreakdown | undefined =>

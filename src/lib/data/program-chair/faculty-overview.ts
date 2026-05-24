@@ -287,7 +287,7 @@ export const getOverloadedFaculty = (): FacultyPerformance[] =>
 export const getUnderloadedFaculty = (): FacultyPerformance[] =>
   facultyPerformances.filter((f) => f.loadStatus === 'underloaded');
 
-export const getTopPerformers = (limit: number = 10): FacultyPerformance[] =>
+export const getTopFacultyPerformers = (limit: number = 10): FacultyPerformance[] =>
   facultyPerformances
     .filter((f) => f.performanceScore !== null)
     .sort((a, b) => b.performanceScore! - a.performanceScore!)

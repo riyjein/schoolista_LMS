@@ -79,7 +79,7 @@ export function AppNavbar() {
                 </div>
               </div>
               <div className="size-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0 shadow-sm ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
-                <span className="text-xs font-bold text-primary-foreground tracking-wider">{currentUser.avatar_initials}</span>
+                <span className="text-xs font-bold text-primary-foreground tracking-wider">{currentUser.avatarInitials}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>

@@ -1,5 +1,5 @@
-import type { GPAResult } from '@/lib/types/grades';
-import { cn } from '@/app/components/ui/utils';
+import type { GPAResult } from '../../../../lib/types/grades';
+import { cn } from '../../ui/utils';
 import { TrendingUp } from 'lucide-react';
 
 interface Props {
