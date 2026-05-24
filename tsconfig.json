@@ -36,6 +36,13 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "PL_TurtleScript",
+    "Schoolista_latest",
+    "schoolista",
+    "Al_Ambulance_Route_Optimizer_repo",
+    "Al_Ambulance_Route_Optimizer_upload",
+    "video-output"
   ]
 }
